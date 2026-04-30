@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AcadEx — Academic Discussion Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Fraunces:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f13;
+    --bg2: #16161d;
+    --bg3: #1e1e28;
+    --card: #1a1a23;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #f0eff4;
+    --muted: #8b8a99;
+    --accent: #7c6af7;
+    --accent2: #a98bf4;
+    --green: #3ccf91;
+    --amber: #f6a623;
+    --red: #f25f5c;
+    --info: #5cb8e4;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --font: 'DM Sans', sans-serif;
+    --font-display: 'Fraunces', serif;
+  }
+  [data-theme="light"] {
+    --bg: #f4f3fa;
+    --bg2: #eceaf5;
+    --bg3: #e0ddf0;
+    --card: #fff;
+    --border: rgba(0,0,0,0.08);
+    --border2: rgba(0,0,0,0.14);
+    --text: #1a1928;
+    --muted: #6e6c82;
+    --accent: #6254e8;
+    --accent2: #8b75e2;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; display: flex; font-size: 15px; }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 240px; min-height: 100vh; background: var(--bg2);
+    border-right: 1px solid var(--border); display: flex; flex-direction: column;
+    position: fixed; left: 0; top: 0; bottom: 0; z-index: 100;
+    transition: transform 0.25s;
+  }
+  .logo { padding: 20px 20px 16px; border-bottom: 1px solid var(--border); }
+  .logo-name { font-family: var(--font-display); font-size: 22px; font-weight: 600; color: var(--accent2); letter-spacing: -0.5px; }
+  .logo-sub { font-size: 11px; color: var(--muted); letter-spacing: 0.5px; text-transform: uppercase; }
+
+  .nav { flex: 1; padding: 12px 8px; overflow-y: auto; }
+  .nav-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; padding: 8px 12px 4px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+    border-radius: var(--radius-sm); cursor: pointer; color: var(--muted);
+    font-size: 14px; font-weight: 400; transition: all 0.15s; margin: 1px 0;
+    border: none; background: none; width: 100%; text-align: left;
+  }
+  .nav-item:hover { background: var(--bg3); color: var(--text); }
+  .nav-item.active { background: rgba(124,106,247,0.15); color: var(--accent2); font-weight: 500; }
+  .nav-item .icon { width: 18px; text-align: center; font-size: 15px; }
+  .badge { margin-left: auto; background: var(--accent); color: #fff; font-size: 10px; padding: 2px 7px; border-radius: 20px; }
+
+  .class-list { padding: 0 8px 12px; }
+  .class-tag {
+    display: flex; align-items: center; gap: 8px; padding: 7px 12px;
+    border-radius: var(--radius-sm); cursor: pointer; font-size: 13px;
+    color: var(--muted); transition: all 0.15s; margin: 1px 0;
+  }
+  .class-tag:hover { background: var(--bg3); color: var(--text); }
+  .class-tag.active { color: var(--text); background: var(--bg3); }
+  .class-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  .sidebar-bottom { padding: 12px 8px 16px; border-top: 1px solid var(--border); }
+  .user-card { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: var(--radius-sm); cursor: pointer; }
+  .user-card:hover { background: var(--bg3); }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: #fff; flex-shrink: 0; }
+  .user-name { font-size: 13px; font-weight: 500; }
+  .user-role { font-size: 11px; color: var(--muted); }
+
+  /* MAIN */
+  .main { margin-left: 240px; flex: 1; min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* TOP BAR */
+  .topbar {
+    background: var(--bg2); border-bottom: 1px solid var(--border);
+    padding: 0 24px; height: 56px; display: flex; align-items: center; gap: 16px;
+    position: sticky; top: 0; z-index: 50;
+  }
+  .topbar-title { font-family: var(--font-display); font-size: 18px; font-weight: 600; flex: 1; }
+  .search-bar {
+    display: flex; align-items: center; gap: 8px; background: var(--bg3);
+    border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px;
+    width: 260px;
+  }
+  .search-bar input { background: none; border: none; outline: none; color: var(--text); font-size: 13px; font-family: var(--font); width: 100%; }
+  .search-bar input::placeholder { color: var(--muted); }
+  .btn {
+    padding: 7px 16px; border-radius: 20px; font-family: var(--font);
+    font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; border: none;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-ghost { background: none; border: 1px solid var(--border2); color: var(--text); }
+  .btn-ghost:hover { background: var(--bg3); }
+  .icon-btn { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; background: var(--bg3); border: 1px solid var(--border); font-size: 15px; transition: all 0.15s; }
+  .icon-btn:hover { border-color: var(--border2); }
+
+  /* CONTENT */
+  .content { flex: 1; padding: 24px; max-width: 900px; }
+
+  /* TABS */
+  .tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
+  .tab { padding: 8px 16px; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s; border-radius: 0; background: none; border-top: none; border-left: none; border-right: none; font-family: var(--font); }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent2); border-bottom-color: var(--accent2); }
+
+  /* FILTERS */
+  .filters { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .filter-chip { padding: 5px 14px; border-radius: 20px; font-size: 12px; cursor: pointer; border: 1px solid var(--border); color: var(--muted); background: none; font-family: var(--font); transition: all 0.15s; }
+  .filter-chip:hover { border-color: var(--border2); color: var(--text); }
+  .filter-chip.active { background: rgba(124,106,247,0.18); border-color: var(--accent); color: var(--accent2); }
+
+  /* QUESTION CARDS */
+  .question-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px 20px; margin-bottom: 12px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .question-card:hover { border-color: var(--border2); transform: translateY(-1px); }
+  .question-card.pinned { border-left: 3px solid var(--amber); }
+  .q-header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+  .q-avatar { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; }
+  .q-meta { flex: 1; }
+  .q-author { font-size: 12px; color: var(--muted); }
+  .q-title { font-size: 15px; font-weight: 500; margin-bottom: 6px; line-height: 1.4; }
+  .q-excerpt { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 12px; }
+  .q-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .tag { padding: 3px 10px; border-radius: 20px; font-size: 11px; background: var(--bg3); color: var(--muted); border: 1px solid var(--border); }
+  .q-footer { display: flex; align-items: center; gap: 16px; }
+  .q-stat { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+  .q-stat span { font-size: 13px; }
+  .q-badge { padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .badge-answered { background: rgba(60,207,145,0.15); color: var(--green); }
+  .badge-open { background: rgba(92,184,228,0.15); color: var(--info); }
+  .class-label { margin-left: auto; font-size: 11px; color: var(--muted); background: var(--bg3); padding: 2px 8px; border-radius: 4px; }
+
+  /* REMINDERS PANEL */
+  .sidebar-right { width: 280px; padding: 24px 16px; border-left: 1px solid var(--border); }
+  .panel-title { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 12px; }
+  .reminder-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 8px; }
+  .reminder-card.urgent { border-left: 3px solid var(--red); }
+  .reminder-card.soon { border-left: 3px solid var(--amber); }
+  .reminder-title { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+  .reminder-meta { font-size: 11px; color: var(--muted); display: flex; justify-content: space-between; }
+  .reminder-due { color: var(--red); font-weight: 500; }
+  .reminder-due.soon { color: var(--amber); }
+
+  .activity-item { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .activity-item:last-child { border-bottom: none; }
+  .a-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-top: 5px; flex-shrink: 0; }
+  .a-text { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .a-text strong { color: var(--text); font-weight: 500; }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200;
+    display: none; align-items: center; justify-content: center; padding: 20px;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--card); border: 1px solid var(--border2); border-radius: 16px;
+    width: 100%; max-width: 600px; max-height: 85vh; overflow-y: auto;
+  }
+  .modal-header { padding: 20px 24px 0; display: flex; align-items: center; justify-content: space-between; }
+  .modal-title { font-family: var(--font-display); font-size: 20px; font-weight: 600; }
+  .modal-close { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; background: var(--bg3); border: none; color: var(--muted); font-size: 18px; line-height: 1; transition: all 0.15s; }
+  .modal-close:hover { color: var(--text); }
+  .modal-body { padding: 20px 24px 24px; }
+  .form-group { margin-bottom: 16px; }
+  .form-label { font-size: 12px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; display: block; }
+  .form-input {
+    width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 10px 14px; color: var(--text); font-size: 14px; font-family: var(--font);
+    outline: none; transition: border-color 0.15s; resize: vertical;
+  }
+  .form-input:focus { border-color: var(--accent); }
+  .form-row { display: flex; gap: 12px; }
+  .form-row .form-group { flex: 1; }
+
+  /* THREAD VIEW */
+  .thread-view { display: none; }
+  .thread-view.open { display: block; }
+  .forum-view { display: block; }
+  .forum-view.hidden { display: none; }
+
+  .thread-question { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; }
+  .thread-title { font-family: var(--font-display); font-size: 22px; font-weight: 600; margin-bottom: 12px; line-height: 1.35; }
+  .thread-body { font-size: 14px; line-height: 1.75; color: var(--muted); margin-bottom: 16px; }
+  .thread-author { display: flex; align-items: center; gap: 10px; }
+
+  .answer-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 10px; }
+  .answer-card.accepted { border-color: var(--green); }
+  .accepted-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--green); font-weight: 500; margin-bottom: 8px; }
+  .answer-text { font-size: 14px; line-height: 1.7; color: var(--muted); }
+  .answer-footer { display: flex; align-items: center; gap: 16px; margin-top: 12px; }
+  .vote-btn { display: flex; align-items: center; gap: 5px; font-size: 13px; color: var(--muted); cursor: pointer; background: none; border: 1px solid var(--border); padding: 4px 12px; border-radius: 20px; font-family: var(--font); transition: all 0.15s; }
+  .vote-btn:hover { color: var(--accent2); border-color: var(--accent); }
+
+  /* REPLY BOX */
+  .reply-box { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; margin-top: 16px; }
+  .reply-box h4 { font-size: 14px; font-weight: 500; margin-bottom: 12px; }
+
+  /* SETTINGS PANEL */
+  .settings-panel { display: none; background: var(--card); border: 1px solid var(--border2); border-radius: 16px; padding: 24px; max-width: 480px; }
+  .settings-panel.open { display: block; }
+  .settings-section { margin-bottom: 24px; }
+  .settings-title { font-family: var(--font-display); font-size: 17px; font-weight: 600; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .setting-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .setting-label { font-size: 13px; }
+  .setting-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  input[type="range"] { accent-color: var(--accent); width: 120px; }
+  input[type="color"] { border: none; background: none; cursor: pointer; width: 36px; height: 28px; border-radius: 4px; }
+  select { background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 5px 10px; border-radius: var(--radius-sm); font-family: var(--font); font-size: 13px; outline: none; cursor: pointer; }
+  .preview-text { background: var(--bg3); border-radius: var(--radius-sm); padding: 12px 16px; font-size: 14px; line-height: 1.6; margin-top: 12px; border: 1px solid var(--border); }
+
+  /* CHAT VIEW */
+  .chat-view { display: none; flex-direction: column; height: calc(100vh - 56px); }
+  .chat-view.open { display: flex; }
+  .chat-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; background: var(--bg2); }
+  .chat-title { font-weight: 500; font-size: 15px; }
+  .chat-members { font-size: 12px; color: var(--muted); }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+  .msg { display: flex; gap: 10px; max-width: 70%; }
+  .msg.mine { align-self: flex-end; flex-direction: row-reverse; }
+  .msg-avatar { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; margin-top: 2px; }
+  .msg-bubble { background: var(--bg3); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; }
+  .msg.mine .msg-bubble { background: rgba(124,106,247,0.2); border-color: rgba(124,106,247,0.3); }
+  .msg-name { font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+  .msg-text { font-size: 14px; line-height: 1.5; }
+  .msg-time { font-size: 10px; color: var(--muted); margin-top: 4px; text-align: right; }
+  .chat-input-area { padding: 14px 20px; border-top: 1px solid var(--border); background: var(--bg2); display: flex; gap: 10px; }
+  .chat-input { flex: 1; background: var(--bg3); border: 1px solid var(--border); border-radius: 20px; padding: 9px 16px; color: var(--text); font-size: 14px; font-family: var(--font); outline: none; }
+  .chat-input:focus { border-color: var(--accent); }
+  .send-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--accent); border: none; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; transition: all 0.15s; }
+  .send-btn:hover { background: var(--accent2); }
+
+  .page { display: none; }
+  .page.active { display: flex; }
+  #page-forum.active { flex-direction: row; }
+  #page-chat.active { display: flex; flex-direction: column; }
+
+  /* ANNOUNCE */
+  .announce-bar { background: rgba(124,106,247,0.12); border: 1px solid rgba(124,106,247,0.25); border-radius: var(--radius-sm); padding: 10px 16px; margin-bottom: 18px; font-size: 13px; display: flex; align-items: center; gap: 10px; }
+  .announce-bar span { font-size: 15px; }
+
+  .empty-state { text-align: center; padding: 48px 20px; color: var(--muted); }
+  .empty-icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-title { font-size: 16px; font-weight: 500; color: var(--text); margin-bottom: 6px; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  @media (max-width: 900px) { .sidebar-right { display: none; } }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-name">AcadEx</div>
+    <div class="logo-sub">Amrita · AIE23</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-label">Menu</div>
+    <button class="nav-item active" onclick="showPage('forum')">
+      <span class="icon">💬</span> Forum
+    </button>
+    <button class="nav-item" onclick="showPage('chat')">
+      <span class="icon">🗨️</span> Group Chat <span class="badge">3</span>
+    </button>
+    <button class="nav-item" onclick="showPage('reminders')">
+      <span class="icon">📌</span> Reminders
+    </button>
+    <button class="nav-item" onclick="showPage('settings')">
+      <span class="icon">⚙️</span> Appearance
+    </button>
+
+    <div class="nav-label" style="margin-top:12px;">Classes</div>
+  </nav>
+  <div class="class-list">
+    <div class="class-tag active" onclick="filterClass(this,'all')">
+      <div class="class-dot" style="background:#7c6af7"></div> All Classes
+    </div>
+    <div class="class-tag" onclick="filterClass(this,'cs')">
+      <div class="class-dot" style="background:#3ccf91"></div> CSE-AI A
+    </div>
+    <div class="class-tag" onclick="filterClass(this,'ds')">
+      <div class="class-dot" style="background:#5cb8e4"></div> CSE-AI B
+    </div>
+    <div class="class-tag" onclick="filterClass(this,'se')">
+      <div class="class-dot" style="background:#f6a623"></div> SE Lab
+    </div>
+    <div class="class-tag" onclick="filterClass(this,'cv')">
+      <div class="class-dot" style="background:#f25f5c"></div> CV Lab
+    </div>
+  </div>
+  <div class="sidebar-bottom">
+    <div class="user-card" onclick="showPage('settings')">
+      <div class="avatar">RS</div>
+      <div>
+        <div class="user-name">Raymics S.</div>
+        <div class="user-role">Student · AIE23034</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-title" id="page-heading">Forum</div>
+    <div class="search-bar">
+      <span style="color:var(--muted);font-size:14px;">🔍</span>
+      <input type="text" placeholder="Search questions..." id="searchInput" oninput="searchQuestions()">
+    </div>
+    <button class="btn btn-primary" onclick="openModal('ask')">+ Ask Question</button>
+    <div class="icon-btn" onclick="toggleTheme()" title="Toggle theme">🌙</div>
+  </div>
+
+  <!-- FORUM PAGE -->
+  <div class="page active" id="page-forum">
+    <div class="content">
+      <div class="announce-bar">
+        <span>📢</span>
+        <div><strong>Mid-sem exams in 2 weeks.</strong> Lab submissions due this Friday. Post your doubts early!</div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab(this,'all')">All Questions</button>
+        <button class="tab" onclick="switchTab(this,'unanswered')">Unanswered</button>
+        <button class="tab" onclick="switchTab(this,'mine')">My Posts</button>
+      </div>
+
+      <div class="filters">
+        <button class="filter-chip active" onclick="filterTag(this,'all')">All</button>
+        <button class="filter-chip" onclick="filterTag(this,'cv')">Computer Vision</button>
+        <button class="filter-chip" onclick="filterTag(this,'se')">Software Engg</button>
+        <button class="filter-chip" onclick="filterTag(this,'wsn')">WSN</button>
+        <button class="filter-chip" onclick="filterTag(this,'python')">Python</button>
+        <button class="filter-chip" onclick="filterTag(this,'exam')">Exam Help</button>
+      </div>
+
+      <div id="questions-list">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="sidebar-right">
+      <div class="panel-title">Upcoming</div>
+      <div class="reminder-card urgent">
+        <div class="reminder-title">CV Lab 6 Submission</div>
+        <div class="reminder-meta"><span>22AIE313</span><span class="reminder-due">Due Tomorrow</span></div>
+      </div>
+      <div class="reminder-card soon">
+        <div class="reminder-title">SE Lab Sheet 3</div>
+        <div class="reminder-meta"><span>22AIE311</span><span class="reminder-due soon">Due in 3 days</span></div>
+      </div>
+      <div class="reminder-card">
+        <div class="reminder-title">Mid-Semester Exam</div>
+        <div class="reminder-meta"><span>All subjects</span><span>Apr 28</span></div>
+      </div>
+
+      <div class="panel-title" style="margin-top:24px;">Recent Activity</div>
+      <div class="activity-item">
+        <div class="a-dot"></div>
+        <div class="a-text"><strong>Ihsal Riyas</strong> answered your SIFT keypoints question</div>
+      </div>
+      <div class="activity-item">
+        <div class="a-dot" style="background:var(--green)"></div>
+        <div class="a-text"><strong>CR</strong> posted a new reminder for WSN assignment</div>
+      </div>
+      <div class="activity-item">
+        <div class="a-dot" style="background:var(--amber)"></div>
+        <div class="a-text"><strong>Dhruv Nair</strong> upvoted your answer on Otsu's method</div>
+      </div>
+      <div class="activity-item">
+        <div class="a-dot"></div>
+        <div class="a-text"><strong>Faculty</strong> commented on the SE Lab discussion</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHAT PAGE -->
+  <div class="page" id="page-chat">
+    <div class="chat-view open" id="chat-container" style="width:100%">
+      <div class="chat-header">
+        <div class="avatar" style="background:linear-gradient(135deg,#3ccf91,#5cb8e4)">A</div>
+        <div>
+          <div class="chat-title" id="chat-group-name">CSE-AI A — General</div>
+          <div class="chat-members">42 members · 8 online</div>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px;">
+          <button class="btn btn-ghost" style="font-size:12px;" onclick="openChatCustomize()">🎨 Customise</button>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <div style="width:8px;height:8px;border-radius:50%;background:var(--green)"></div>
+            <span style="font-size:12px;color:var(--muted)">Live</span>
+          </div>
+        </div>
+      </div>
+      <div class="chat-messages" id="chat-messages">
+        <!-- Rendered by JS -->
+      </div>
+      <div class="chat-input-area">
+        <input class="chat-input" id="chat-input" type="text" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendChatMsg()">
+        <button class="send-btn" onclick="sendChatMsg()">➤</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- REMINDERS PAGE -->
+  <div class="page" id="page-reminders">
+    <div class="content" style="max-width:700px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <h2 style="font-family:var(--font-display);font-size:22px;font-weight:600;">Reminders</h2>
+        <button class="btn btn-primary" onclick="openModal('reminder')">+ Add Reminder</button>
+      </div>
+      <div id="reminders-list">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS PAGE -->
+  <div class="page" id="page-settings">
+    <div class="content" style="max-width:520px">
+      <h2 style="font-family:var(--font-display);font-size:22px;font-weight:600;margin-bottom:20px;">Appearance Settings</h2>
+      <div class="settings-panel open">
+        <div class="settings-section">
+          <div class="settings-title">Theme</div>
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">Colour Mode</div>
+              <div class="setting-desc">Light or dark background</div>
+            </div>
+            <select onchange="setTheme(this.value)" id="theme-select">
+              <option value="dark">Dark</option>
+              <option value="light">Light</option>
+            </select>
+          </div>
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">Accent Colour</div>
+              <div class="setting-desc">Highlights and active states</div>
+            </div>
+            <input type="color" value="#7c6af7" onchange="setAccent(this.value)">
+          </div>
+        </div>
+        <div class="settings-section">
+          <div class="settings-title">Typography</div>
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">Font Size</div>
+              <div class="setting-desc">Base text size</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <input type="range" min="12" max="20" value="15" step="1" oninput="setFontSize(this.value);document.getElementById('fs-val').textContent=this.value+'px'">
+              <span style="font-size:12px;color:var(--muted);min-width:32px" id="fs-val">15px</span>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">Font Family</div>
+              <div class="setting-desc">App-wide typeface</div>
+            </div>
+            <select onchange="setFont(this.value)">
+              <option value="'DM Sans', sans-serif">DM Sans</option>
+              <option value="'Segoe UI', sans-serif">Segoe UI</option>
+              <option value="Georgia, serif">Georgia</option>
+              <option value="'Courier New', monospace">Courier New</option>
+            </select>
+          </div>
+        </div>
+        <div class="settings-section">
+          <div class="settings-title">Chat Background</div>
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">Chat Background Colour</div>
+              <div class="setting-desc">Background in group chats</div>
+            </div>
+            <input type="color" value="#0f0f13" id="chat-bg-pick" onchange="setChatBg(this.value)">
+          </div>
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">Message Bubble Colour</div>
+              <div class="setting-desc">Your sent messages</div>
+            </div>
+            <input type="color" value="#3d3680" id="bubble-pick" onchange="setBubble(this.value)">
+          </div>
+        </div>
+        <div>
+          <div class="settings-title">Preview</div>
+          <div class="preview-text" id="preview-text">
+            This is how your text will look across the platform. Adjust the settings above to personalise your experience.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ASK QUESTION MODAL -->
+<div class="modal-overlay" id="modal-ask">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Ask a Question</div>
+      <button class="modal-close" onclick="closeModal('ask')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Question Title</label>
+        <input type="text" class="form-input" id="q-title" placeholder="What is your question? Be specific.">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Details</label>
+        <textarea class="form-input" id="q-body" rows="4" placeholder="Explain the problem, what you've tried, and what you expected..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Class / Subject</label>
+          <select class="form-input" id="q-class">
+            <option value="CSE-AI A">CSE-AI A</option>
+            <option value="CSE-AI B">CSE-AI B</option>
+            <option value="SE Lab">SE Lab</option>
+            <option value="CV Lab">CV Lab</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tags</label>
+          <input type="text" class="form-input" id="q-tags" placeholder="python, cv, exam...">
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;padding:10px;" onclick="submitQuestion()">Post Question</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD REMINDER MODAL -->
+<div class="modal-overlay" id="modal-reminder">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add Reminder</div>
+      <button class="modal-close" onclick="closeModal('reminder')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Title</label>
+        <input type="text" class="form-input" id="r-title" placeholder="Assignment / Test name">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Due Date</label>
+          <input type="date" class="form-input" id="r-date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Class</label>
+          <select class="form-input" id="r-class">
+            <option>CSE-AI A</option>
+            <option>SE Lab</option>
+            <option>CV Lab</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Priority</label>
+        <select class="form-input" id="r-priority">
+          <option value="urgent">Urgent</option>
+          <option value="soon">Soon</option>
+          <option value="normal">Normal</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" style="width:100%;padding:10px;" onclick="submitReminder()">Add Reminder</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHAT CUSTOMISE MODAL -->
+<div class="modal-overlay" id="modal-chat-customize">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Customise Chat</div>
+      <button class="modal-close" onclick="closeModal('chat-customize')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Chat Group Name</label>
+        <input type="text" class="form-input" id="cc-name" placeholder="e.g. CSE-AI A — General">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Background Colour</label>
+          <input type="color" class="form-input" id="cc-bg" value="#0f0f13" style="height:44px;padding:4px 8px;cursor:pointer;">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Your Bubble Colour</label>
+          <input type="color" class="form-input" id="cc-bubble" value="#3d3680" style="height:44px;padding:4px 8px;cursor:pointer;">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Font Size</label>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <input type="range" min="11" max="20" value="14" step="1" style="flex:1;" oninput="document.getElementById('cc-fs-val').textContent=this.value+'px'" id="cc-fs">
+          <span id="cc-fs-val" style="font-size:12px;color:var(--muted);min-width:34px">14px</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Font Colour (messages)</label>
+        <input type="color" class="form-input" id="cc-text" value="#f0eff4" style="height:44px;padding:4px 8px;cursor:pointer;">
+      </div>
+      <button class="btn btn-primary" style="width:100%;padding:10px;margin-top:4px;" onclick="applyChatCustomize()">Apply Changes</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const questions = [
+  {id:1,title:"How does Lowe's ratio test work in SIFT matching?",body:"I understand SIFT keypoints but I'm confused about what ratio threshold to pick and why 0.75 is standard. Does it change per image?",tags:["cv","python"],class:"CV Lab",author:"Raymics S.",answers:3,votes:7,solved:true,mine:true},
+  {id:2,title:"Difference between Otsu's threshold and manual threshold in Canny?",body:"We used both in lab — when do I choose one over the other? Also why does Otsu fail on bimodal histograms?",tags:["cv","exam"],class:"CV Lab",author:"Ihsal Riyas",answers:2,votes:5,solved:true,mine:false},
+  {id:3,title:"Lucas-Kanade optical flow — what is the brightness constancy assumption?",body:"The assignment asks to derive the OF equation but I don't get why we assume brightness is constant. What breaks if it isn't?",tags:["cv","exam"],class:"CV Lab",author:"Dhruv Nair",answers:1,votes:4,solved:false,mine:false},
+  {id:4,title:"How to add JWT authentication in Node.js for the SE project backend?",body:"We decided on JWT for the academic platform. Anyone done this before? What library is best?",tags:["se","python"],class:"SE Lab",author:"Aditya K.",answers:4,votes:9,solved:true,mine:false},
+  {id:5,title:"WSN energy harvesting — difference between solar and thermal TEG?",body:"Lab sheet says to compare harvesting approaches. Can't find a clear comparison. TEG seems less practical?",tags:["wsn","exam"],class:"CSE-AI A",author:"Priya M.",answers:0,votes:2,solved:false,mine:false},
+  {id:6,title:"BLOB detection — why does scale-space LoG work better than DoG?",body:"Prof mentioned LoG is theoretically correct but DoG is used in practice. Why is that and do marks care?",tags:["cv"],class:"CV Lab",author:"Kiran A.",answers:2,votes:6,solved:false,mine:false},
+];
+
+const reminders = [
+  {title:"CV Lab 6 Submission",class:"CV Lab",date:"2026-04-15",priority:"urgent"},
+  {title:"SE Lab Sheet 3",class:"SE Lab",date:"2026-04-17",priority:"soon"},
+  {title:"WSN Assignment 2",class:"CSE-AI A",date:"2026-04-19",priority:"soon"},
+  {title:"Mid-Semester Exam",class:"All",date:"2026-04-28",priority:"normal"},
+];
+
+const chatMessages = [
+  {name:"Ihsal Riyas",init:"IR",text:"Has anyone started CV Lab 6? The SIFT matching is killing me",time:"10:12",mine:false,color:"#3ccf91"},
+  {name:"Dhruv Nair",init:"DN",text:"Yeah the ratio test part tripped me up. Use 0.75 and it mostly works",time:"10:15",mine:false,color:"#5cb8e4"},
+  {name:"Raymics S.",init:"RS",text:"I got it working. Will post on the forum with explanation",time:"10:18",mine:true,color:"#7c6af7"},
+  {name:"Aditya K.",init:"AK",text:"Also reminder that SE Lab sheet 3 is due Friday. Elaboration phase diagrams",time:"10:22",mine:false,color:"#f6a623"},
+  {name:"Ihsal Riyas",init:"IR",text:"On it already. Anyone need the class diagram template?",time:"10:25",mine:false,color:"#3ccf91"},
+  {name:"Priya M.",init:"PM",text:"Yes please! Share in the forum or here",time:"10:26",mine:false,color:"#f25f5c"},
+];
+
+let currentTab = 'all';
+let currentFilter = 'all';
+let currentClass = 'all';
+let chatStyle = { bg: '#0f0f13', bubble: '#3d3680', fs: 14, text: '#f0eff4' };
+
+function renderQuestions() {
+  let list = [...questions];
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  if (currentTab === 'unanswered') list = list.filter(q => q.answers === 0);
+  if (currentTab === 'mine') list = list.filter(q => q.mine);
+  if (currentFilter !== 'all') list = list.filter(q => q.tags.includes(currentFilter));
+  if (currentClass !== 'all') {
+    const classMap = {cs:'CSE-AI A',ds:'CSE-AI B',se:'SE Lab',cv:'CV Lab'};
+    list = list.filter(q => q.class === classMap[currentClass]);
+  }
+  if (search) list = list.filter(q => q.title.toLowerCase().includes(search) || q.tags.some(t=>t.includes(search)));
+
+  const cont = document.getElementById('questions-list');
+  if (!list.length) { cont.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">No questions found</div><p>Try a different filter or ask a new question.</p></div>`; return; }
+  cont.innerHTML = list.map(q => `
+    <div class="question-card${q.id===1?' pinned':''}" onclick="openThread(${q.id})">
+      <div class="q-header">
+        <div class="q-avatar" style="background:rgba(124,106,247,0.2);color:var(--accent2)">${q.author.split(' ').map(n=>n[0]).join('')}</div>
+        <div class="q-meta"><div class="q-author">${q.author} · ${q.class}</div></div>
+        <span class="q-badge ${q.solved?'badge-answered':'badge-open'}">${q.solved?'✓ Answered':'Open'}</span>
+      </div>
+      <div class="q-title">${q.title}</div>
+      <div class="q-excerpt">${q.body.slice(0,120)}…</div>
+      <div class="q-tags">${q.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+      <div class="q-footer">
+        <div class="q-stat"><span>▲</span> ${q.votes}</div>
+        <div class="q-stat"><span>💬</span> ${q.answers} answers</div>
+        <span class="class-label">${q.class}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderReminders() {
+  const cont = document.getElementById('reminders-list');
+  cont.innerHTML = reminders.map(r => `
+    <div class="reminder-card ${r.priority}" style="margin-bottom:12px;padding:14px 18px;border-radius:var(--radius)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+        <div style="font-weight:500;font-size:15px;">${r.title}</div>
+        <span style="font-size:11px;padding:3px 10px;border-radius:20px;background:var(--bg3);color:var(--muted)">${r.priority}</span>
+      </div>
+      <div style="font-size:13px;color:var(--muted);display:flex;justify-content:space-between;">
+        <span>${r.class}</span><span>${r.date}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderChat() {
+  const cont = document.getElementById('chat-messages');
+  cont.innerHTML = chatMessages.map(m => `
+    <div class="msg ${m.mine?'mine':''}">
+      ${!m.mine ? `<div class="msg-avatar" style="background:${m.color}22;color:${m.color}">${m.init}</div>` : ''}
+      <div>
+        ${!m.mine ? `<div class="msg-name">${m.name}</div>` : ''}
+        <div class="msg-bubble" style="${m.mine?`background:${chatStyle.bubble}33;border-color:${chatStyle.bubble}66;`:''}color:${chatStyle.text};font-size:${chatStyle.fs}px">${m.text}</div>
+        <div class="msg-time">${m.time}</div>
+      </div>
+    </div>
+  `).join('');
+  cont.scrollTop = cont.scrollHeight;
+}
+
+function openThread(id) {
+  const q = questions.find(x=>x.id===id);
+  const cont = document.getElementById('questions-list');
+  document.querySelector('.tabs').style.display = 'none';
+  document.querySelector('.filters').style.display = 'none';
+  document.querySelector('.announce-bar').style.display = 'none';
+  cont.innerHTML = `
+    <button class="btn btn-ghost" style="margin-bottom:16px;font-size:13px;" onclick="backToForum()">← Back to Forum</button>
+    <div class="thread-question">
+      <div class="thread-title">${q.title}</div>
+      <div class="thread-body">${q.body}<br><br>I'm running it on two book cover images in Google Colab and the matches look reasonable but I'm not confident about the threshold choice.</div>
+      <div class="thread-author">
+        <div class="q-avatar" style="width:32px;height:32px;background:rgba(124,106,247,0.2);color:var(--accent2)">${q.author.split(' ').map(n=>n[0]).join('')}</div>
+        <div><div style="font-size:13px;font-weight:500">${q.author}</div><div style="font-size:11px;color:var(--muted)">${q.class} · 2 hours ago</div></div>
+        <div class="q-tags" style="margin-left:auto;margin-bottom:0">${q.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+      </div>
+    </div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:12px;font-weight:500">${q.answers} Answers</div>
+    <div class="answer-card accepted">
+      <div class="accepted-badge">✓ Accepted Answer</div>
+      <div class="answer-text">Lowe's ratio test compares the distance to the best match against the second-best match. The 0.75 threshold means: only keep the match if the best is at most 75% as distant as the second-best. Lower threshold = stricter = fewer but better matches. For textbook images with clean features, 0.7 works well. For noisy photos, try 0.8. It's an empirical parameter — Lowe chose 0.75 as a good default in his 2004 paper based on ROC curves.</div>
+      <div class="answer-footer">
+        <button class="vote-btn">▲ 12 helpful</button>
+        <span style="font-size:12px;color:var(--muted)">Ihsal Riyas · 1 hour ago</span>
+      </div>
+    </div>
+    <div class="answer-card">
+      <div class="answer-text">Also worth noting: the ratio test is applied after finding the two nearest neighbours in feature space using a KD-tree or FLANN. The cv2.BFMatcher with knnMatch(k=2) does exactly this. So always use knnMatch not just match.</div>
+      <div class="answer-footer">
+        <button class="vote-btn">▲ 6 helpful</button>
+        <span style="font-size:12px;color:var(--muted)">Dhruv Nair · 45 min ago</span>
+      </div>
+    </div>
+    <div class="reply-box">
+      <h4>Your Answer</h4>
+      <textarea class="form-input" rows="4" placeholder="Write a clear, helpful answer..." style="margin-bottom:12px;"></textarea>
+      <button class="btn btn-primary">Post Answer</button>
+    </div>
+  `;
+}
+
+function backToForum() {
+  document.querySelector('.tabs').style.display = '';
+  document.querySelector('.filters').style.display = '';
+  document.querySelector('.announce-bar').style.display = '';
+  renderQuestions();
+}
+
+function showPage(p) {
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const labels = {forum:'Forum',chat:'Group Chat',reminders:'Reminders',settings:'Appearance Settings'};
+  document.getElementById('page-heading').textContent = labels[p]||p;
+  const btns = document.querySelectorAll('.nav-item');
+  btns.forEach(b => { if(b.textContent.trim().toLowerCase().startsWith(p.charAt(0))||b.textContent.includes(labels[p]?.split(' ')[0]||'')) b.classList.add('active'); });
+  document.querySelectorAll('.nav-item')[{forum:0,chat:1,reminders:2,settings:3}[p]].classList.add('active');
+  if(p==='reminders') renderReminders();
+  if(p==='chat') { renderChat(); applyChatBgNow(); }
+}
+
+function switchTab(el, t) {
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active'); currentTab = t; renderQuestions();
+}
+
+function filterTag(el, t) {
+  document.querySelectorAll('.filter-chip').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active'); currentFilter = t; renderQuestions();
+}
+
+function filterClass(el, c) {
+  document.querySelectorAll('.class-tag').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active'); currentClass = c; renderQuestions();
+}
+
+function searchQuestions() { renderQuestions(); }
+
+function openModal(n) { document.getElementById('modal-'+n).classList.add('open'); }
+function closeModal(n) { document.getElementById('modal-'+n).classList.remove('open'); }
+
+document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if(e.target===m) m.classList.remove('open'); }));
+
+function submitQuestion() {
+  const t = document.getElementById('q-title').value.trim();
+  const b = document.getElementById('q-body').value.trim();
+  const c = document.getElementById('q-class').value;
+  const tags = document.getElementById('q-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
+  if(!t) return;
+  questions.unshift({id:Date.now(),title:t,body:b||'No details provided.',tags:tags.length?tags:['general'],class:c,author:'Raymics S.',answers:0,votes:0,solved:false,mine:true});
+  closeModal('ask');
+  document.getElementById('q-title').value='';
+  document.getElementById('q-body').value='';
+  document.getElementById('q-tags').value='';
+  renderQuestions();
+}
+
+function submitReminder() {
+  const t = document.getElementById('r-title').value.trim();
+  const d = document.getElementById('r-date').value;
+  const c = document.getElementById('r-class').value;
+  const p = document.getElementById('r-priority').value;
+  if(!t) return;
+  reminders.unshift({title:t,class:c,date:d||'TBD',priority:p});
+  closeModal('reminder');
+  document.getElementById('r-title').value='';
+  renderReminders();
+}
+
+function sendChatMsg() {
+  const inp = document.getElementById('chat-input');
+  const txt = inp.value.trim();
+  if(!txt) return;
+  const now = new Date();
+  const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+  chatMessages.push({name:'Raymics S.',init:'RS',text:txt,time,mine:true,color:'#7c6af7'});
+  inp.value = '';
+  renderChat();
+}
+
+function openChatCustomize() { 
+  document.getElementById('cc-name').value = document.getElementById('chat-group-name').textContent;
+  document.getElementById('cc-bg').value = rgbToHex(document.getElementById('chat-container').style.background) || '#0f0f13';
+  openModal('chat-customize'); 
+}
+
+function applyChatCustomize() {
+  const name = document.getElementById('cc-name').value.trim();
+  const bg = document.getElementById('cc-bg').value;
+  const bubble = document.getElementById('cc-bubble').value;
+  const fs = document.getElementById('cc-fs').value;
+  const text = document.getElementById('cc-text').value;
+  if(name) document.getElementById('chat-group-name').textContent = name;
+  chatStyle = { bg, bubble, fs: parseInt(fs), text };
+  applyChatBgNow();
+  renderChat();
+  closeModal('chat-customize');
+}
+
+function applyChatBgNow() {
+  const chatMsgs = document.getElementById('chat-messages');
+  if(chatMsgs) chatMsgs.style.background = chatStyle.bg;
+}
+
+function rgbToHex(rgb) {
+  if(!rgb||rgb.startsWith('#')) return rgb;
+  const m = rgb.match(/\d+/g);
+  if(!m||m.length<3) return '#0f0f13';
+  return '#'+m.slice(0,3).map(x=>parseInt(x).toString(16).padStart(2,'0')).join('');
+}
+
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'light' ? 'dark' : 'light';
+  setTheme(next);
+  document.getElementById('theme-select').value = next;
+}
+
+function setTheme(v) {
+  document.documentElement.setAttribute('data-theme', v==='light'?'light':'');
+  document.querySelector('.icon-btn').textContent = v==='light'?'🌞':'🌙';
+}
+
+function setAccent(v) {
+  document.documentElement.style.setProperty('--accent', v);
+  const r = parseInt(v.slice(1,3),16), g = parseInt(v.slice(3,5),16), b = parseInt(v.slice(5,7),16);
+  document.documentElement.style.setProperty('--accent2', `rgb(${Math.min(255,r+30)},${Math.min(255,g+30)},${Math.min(255,b+30)})`);
+}
+
+function setFontSize(v) {
+  document.body.style.fontSize = v + 'px';
+  document.getElementById('preview-text').style.fontSize = v + 'px';
+}
+
+function setFont(v) {
+  document.documentElement.style.setProperty('--font', v);
+  document.body.style.fontFamily = v;
+}
+
+function setChatBg(v) { chatStyle.bg = v; applyChatBgNow(); }
+function setBubble(v) { chatStyle.bubble = v; renderChat(); }
+
+// Init
+renderQuestions();
+</script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+.reminder-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 18px; margin-bottom: 10px;
+  transition: all 0.15s;
+}
+.reminder-card:hover { border-color: var(--border2); }
+.reminder-card.urgent { border-left: 3px solid var(--red); }
+.reminder-card.soon   { border-left: 3px solid var(--amber); }
+.reminder-card.normal { border-left: 3px solid var(--info); }
+
+.reminder-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 6px; gap: 8px; }
+.reminder-title { font-size: 15px; font-weight: 500; }
+.priority-badge { font-size: 11px; padding: 2px 10px; border-radius: 20px; background: var(--bg3); color: var(--muted); }
+.priority-badge.urgent { background: rgba(242,95,92,0.15); color: var(--red); }
+.priority-badge.soon   { background: rgba(246,166,35,0.15); color: var(--amber); }
+.priority-badge.normal { background: rgba(92,184,228,0.15); color: var(--info); }
+
+.reminder-meta { font-size: 13px; color: var(--muted); display: flex; justify-content: space-between; margin-bottom: 4px; }
+.due-label { font-weight: 500; }
+.due-label.urgent { color: var(--red); }
+.due-label.soon   { color: var(--amber); }
+.due-label.normal { color: var(--info); }
+
+.reminder-date { font-size: 11px; color: var(--muted); }
+
+.rem-delete {
+  background: none; border: none; color: var(--muted);
+  cursor: pointer; font-size: 12px; padding: 2px 6px;
+  border-radius: 4px; transition: all 0.15s;
+}
+.rem-delete:hover { color: var(--red); background: rgba(242,95,92,0.1); }

@@ -1,0 +1,39 @@
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 200; display: flex;
+  align-items: center; justify-content: center;
+  padding: 20px; backdrop-filter: blur(4px);
+  animation: fadeOverlay 0.15s ease;
+}
+@keyframes fadeOverlay { from { opacity: 0; } to { opacity: 1; } }
+
+.modal {
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 16px; width: 100%;
+  max-height: 85vh; overflow-y: auto;
+  animation: slideIn 0.2s ease;
+}
+.modal-header {
+  padding: 20px 24px 0;
+  display: flex; align-items: center;
+  justify-content: space-between;
+  position: sticky; top: 0;
+  background: var(--card);
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-title {
+  font-family: var(--font-display);
+  font-size: 20px; font-weight: 600;
+}
+.modal-close {
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; background: var(--bg3); border: none;
+  color: var(--muted); font-size: 20px; line-height: 1;
+  transition: all 0.15s; font-family: var(--font);
+}
+.modal-close:hover { color: var(--text); background: var(--border2); }
+.modal-body { padding: 20px 24px 24px; }

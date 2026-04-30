@@ -1,0 +1,29 @@
+.forum-right-panel {
+  width: 280px; flex-shrink: 0;
+  padding: 24px 16px;
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+}
+.panel-title {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.8px; color: var(--muted); margin-bottom: 12px;
+}
+.mini-reminder {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 8px;
+}
+.mini-reminder.urgent { border-left: 3px solid var(--red); }
+.mini-reminder.soon   { border-left: 3px solid var(--amber); }
+.mini-reminder.normal { border-left: 3px solid var(--info); }
+.mr-title { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+.mr-meta { font-size: 11px; color: var(--muted); display: flex; justify-content: space-between; }
+
+.activity-item { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.activity-item:last-child { border-bottom: none; }
+.a-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-top: 5px; flex-shrink: 0; }
+.a-text { font-size: 12px; color: var(--muted); line-height: 1.5; }
+.a-text strong { color: var(--text); font-weight: 500; }
+
+.link-btn { background: none; border: none; color: var(--accent2); cursor: pointer; font-family: var(--font); font-size: inherit; text-decoration: underline; padding: 0; }
+
+@media (max-width: 900px) { .forum-right-panel { display: none; } }
