@@ -1,0 +1,4 @@
+first_name,last_name,email,assignments,password
+Alan,Turing,alan.turing@example.com,CSE-A:Math for Comp;CSE-B:Math for Comp,SecurePass!
+Grace,Hopper,grace.hopper@example.com,CSE-A:Programming;ECE-A:AI,SecurePass!
+John,Doe,john.doe@example.com,ECE-A:Signal Processing,SecurePass!

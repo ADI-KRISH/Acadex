@@ -1,5 +1,6 @@
 const express = require('express');
 const User = require('../models/User');
+const ClassGroup = require('../models/ClassGroup');
 const { generateToken, verifyToken } = require('../middleware/auth');
 const { validateUserRegistration, validateUserLogin, validatePasswordChange } = require('../middleware/validation');
 
@@ -10,7 +11,18 @@ const router = express.Router();
 // @access  Public
 router.post('/register', validateUserRegistration, async (req, res) => {
   try {
-    const { username, email, password, profile, academic, role } = req.body;
+    const { username, email, password, profile, role, classGroupId } = req.body;
+
+    const selectedRole = role || 'student';
+
+    // Fetch ClassGroup
+    const classGroup = await ClassGroup.findById(classGroupId);
+    if (!classGroup || !classGroup.isActive) {
+      return res.status(400).json({
+        success: false,
+        message: 'Selected class group is invalid or inactive'
+      });
+    }
 
     // Check if user already exists
     const existingUser = await User.findOne({
@@ -30,11 +42,25 @@ router.post('/register', validateUserRegistration, async (req, res) => {
       email,
       password,
       profile,
-      academic,
-      role: role || 'student'
+      academic: {
+        class: classGroup.name,
+        stream: classGroup.stream,
+        semester: classGroup.semester || 1
+      },
+      role: selectedRole
     });
 
     await user.save();
+
+    // Add user to ClassGroup
+    if (selectedRole === 'student') {
+      await classGroup.addMember(user._id);
+    } else if (selectedRole === 'faculty') {
+      if (!classGroup.faculty.includes(user._id)) {
+        classGroup.faculty.push(user._id);
+        await classGroup.save();
+      }
+    }
 
     // Generate token
     const token = generateToken(user._id);

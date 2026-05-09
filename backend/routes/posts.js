@@ -5,6 +5,7 @@ const User = require('../models/User');
 const Notification = require('../models/Notification');
 const { verifyToken, authorize, canModify } = require('../middleware/auth');
 const { validatePostCreation, validatePostUpdate } = require('../middleware/validation');
+const upload = require('../middleware/upload');
 
 const router = express.Router();
 
@@ -21,12 +22,17 @@ router.get('/', async (req, res) => {
       stream,
       category,
       tags,
+      author,
       sortBy = 'createdAt',
       sortOrder = 'desc'
     } = req.query;
 
     // Build filter
     const filter = { status: 'active' };
+    
+    if (author) {
+      filter.author = author;
+    }
     
     if (className) {
       filter.class = className;
@@ -116,13 +122,34 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// Middleware to parse JSON strings from FormData (e.g. tags)
+const parseFormData = (req, res, next) => {
+  if (req.body.tags && typeof req.body.tags === 'string') {
+    try {
+      req.body.tags = JSON.parse(req.body.tags);
+    } catch (e) {
+      req.body.tags = req.body.tags.split(',').map(tag => tag.trim());
+    }
+  }
+  next();
+};
+
 // @route   POST /api/posts
 // @desc    Create a new post
 // @access  Private
-router.post('/', verifyToken, validatePostCreation, async (req, res) => {
+router.post('/', verifyToken, upload.array('attachments', 5), parseFormData, validatePostCreation, async (req, res) => {
   try {
+    const attachments = req.files ? req.files.map(file => ({
+      filename: file.filename,
+      originalName: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size,
+      url: `/uploads/posts/${file.filename}`
+    })) : [];
+
     const postData = {
       ...req.body,
+      attachments,
       author: req.user._id
     };
 
@@ -136,6 +163,31 @@ router.post('/', verifyToken, validatePostCreation, async (req, res) => {
 
     // Populate author info
     await post.populate('author', 'username profile.firstName profile.lastName profile.avatar');
+
+    // Create notifications for all students in the same class
+    try {
+      const classMembers = await User.find({
+        'academic.class': post.class,
+        _id: { $ne: req.user._id },
+        isActive: true
+      });
+
+      const notifications = classMembers.map(member => ({
+        recipient: member._id,
+        sender: req.user._id,
+        type: 'announcement', // Using announcement type for new questions
+        title: 'New Question Posted',
+        message: `${req.user.profile.firstName} posted: ${post.title}`,
+        relatedPost: post._id
+      }));
+
+      if (notifications.length > 0) {
+        await Notification.insertMany(notifications);
+      }
+    } catch (notifyError) {
+      console.error('Failed to send new post notifications:', notifyError);
+      // Don't fail the post creation if notifications fail
+    }
 
     res.status(201).json({
       success: true,
@@ -170,13 +222,17 @@ router.put('/:id', verifyToken, validatePostUpdate, async (req, res) => {
     // Check permissions
     const user = req.user;
     const isOwner = post.author.toString() === user._id.toString();
-    const isCR = user.role === 'cr' && post.class === user.academic.class;
+    const isCR = user.role === 'cr';
+    const isFaculty = user.role === 'faculty';
     const isAdmin = user.role === 'admin';
 
-    if (!isOwner && !isCR && !isAdmin) {
+    // Log for debugging
+    console.log(`Permission check: user=${user._id}, role=${user.role}, isOwner=${isOwner}`);
+
+    if (!isOwner && !isCR && !isFaculty && !isAdmin) {
       return res.status(403).json({
         success: false,
-        message: 'Access denied. You can only edit your own posts.'
+        message: 'Access denied. You do not have permission to edit this post.'
       });
     }
 
@@ -228,13 +284,17 @@ router.delete('/:id', verifyToken, async (req, res) => {
     // Check permissions
     const user = req.user;
     const isOwner = post.author.toString() === user._id.toString();
-    const isCR = user.role === 'cr' && post.class === user.academic.class;
+    const isCR = user.role === 'cr';
+    const isFaculty = user.role === 'faculty';
     const isAdmin = user.role === 'admin';
 
-    if (!isOwner && !isCR && !isAdmin) {
+    // Log for debugging
+    console.log(`Delete permission check: user=${user._id}, role=${user.role}, isOwner=${isOwner}, isCR=${isCR}, isFaculty=${isFaculty}`);
+
+    if (!isOwner && !isCR && !isFaculty && !isAdmin) {
       return res.status(403).json({
         success: false,
-        message: 'Access denied. You can only delete your own posts.'
+        message: 'Access denied. You do not have permission to delete this post.'
       });
     }
 
@@ -299,8 +359,7 @@ router.post('/:id/vote', verifyToken, async (req, res) => {
       success: true,
       message: 'Vote recorded successfully',
       data: {
-        upvotes: post.votes.upvotes.length,
-        downvotes: post.votes.downvotes.length,
+        votes: post.votes,
         voteScore: post.voteScore
       }
     });
@@ -355,9 +414,7 @@ router.post('/:id/best-answer', verifyToken, async (req, res) => {
     await post.save();
 
     // Update comment author stats
-    await User.findByIdAndUpdate(comment.author, {
-      $inc: { 'stats.helpfulVotes': 1 }
-    });
+    // helpfulVotes increment removed
 
     // Create notification for comment author
     await Notification.createNotification({

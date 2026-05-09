@@ -123,29 +123,27 @@ postSchema.methods.hasUserVoted = function(userId, voteType) {
 
 // Method to add/remove vote
 postSchema.methods.toggleVote = function(userId, voteType) {
-  const userObjectId = mongoose.Types.ObjectId(userId);
-  
   if (voteType === 'upvote') {
     // Remove from downvotes if exists
-    this.votes.downvotes = this.votes.downvotes.filter(vote => vote.user.toString() !== userId);
+    this.votes.downvotes = this.votes.downvotes.filter(vote => vote.user.toString() !== userId.toString());
     
     // Toggle upvote
-    const existingUpvote = this.votes.upvotes.find(vote => vote.user.toString() === userId);
+    const existingUpvote = this.votes.upvotes.find(vote => vote.user.toString() === userId.toString());
     if (existingUpvote) {
-      this.votes.upvotes = this.votes.upvotes.filter(vote => vote.user.toString() !== userId);
+      this.votes.upvotes = this.votes.upvotes.filter(vote => vote.user.toString() !== userId.toString());
     } else {
-      this.votes.upvotes.push({ user: userObjectId });
+      this.votes.upvotes.push({ user: userId });
     }
   } else if (voteType === 'downvote') {
     // Remove from upvotes if exists
-    this.votes.upvotes = this.votes.upvotes.filter(vote => vote.user.toString() !== userId);
+    this.votes.upvotes = this.votes.upvotes.filter(vote => vote.user.toString() !== userId.toString());
     
     // Toggle downvote
-    const existingDownvote = this.votes.downvotes.find(vote => vote.user.toString() === userId);
+    const existingDownvote = this.votes.downvotes.find(vote => vote.user.toString() === userId.toString());
     if (existingDownvote) {
-      this.votes.downvotes = this.votes.downvotes.filter(vote => vote.user.toString() !== userId);
+      this.votes.downvotes = this.votes.downvotes.filter(vote => vote.user.toString() !== userId.toString());
     } else {
-      this.votes.downvotes.push({ user: userObjectId });
+      this.votes.downvotes.push({ user: userId });
     }
   }
   

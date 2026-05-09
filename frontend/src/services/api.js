@@ -68,7 +68,6 @@ export const commentsAPI = {
   updateComment: (id, commentData) => api.put(`/comments/${id}`, commentData),
   deleteComment: (id) => api.delete(`/comments/${id}`),
   voteComment: (id, voteType) => api.post(`/comments/${id}/vote`, { voteType }),
-  markHelpful: (id) => api.post(`/comments/${id}/helpful`),
 };
 
 // Users API
@@ -94,9 +93,55 @@ export const notificationsAPI = {
   getStats: () => api.get('/notifications/stats'),
 };
 
+// Reminders API
+export const remindersAPI = {
+  getReminders: (params = {}) => api.get('/reminders', { params }),
+  getReminder: (id) => api.get(`/reminders/${id}`),
+  createReminder: (reminderData) => api.post('/reminders', reminderData),
+  updateReminder: (id, reminderData) => api.put(`/reminders/${id}`, reminderData),
+  deleteReminder: (id) => api.delete(`/reminders/${id}`),
+};
+
+// Class Groups API
+export const classGroupsAPI = {
+  getPublicClassGroups: () => api.get('/classgroups/public'),
+  getClassGroups: (params = {}) => api.get('/classgroups', { params }),
+  getClassGroup: (id) => api.get(`/classgroups/${id}`),
+  createClassGroup: (groupData) => api.post('/classgroups', groupData),
+  updateClassGroup: (id, groupData) => api.put(`/classgroups/${id}`, groupData),
+  addMember: (id, userId) => api.post(`/classgroups/${id}/members`, { userId }),
+  removeMember: (id, userId) => api.delete(`/classgroups/${id}/members/${userId}`),
+  deleteClassGroup: (id) => api.delete(`/classgroups/${id}`),
+};
+
+// Chat API
+export const chatAPI = {
+  getRooms: () => api.get('/chat/rooms'),
+  createRoom: (roomData) => api.post('/chat/rooms', roomData),
+  getMessages: (roomId) => api.get(`/chat/rooms/${roomId}/messages`),
+};
+
+// Admin API
+export const adminAPI = {
+  getHealth: () => api.get('/admin/health'),
+  getUsers: () => api.get('/admin/users'),
+  updateUserRole: (id, role) => api.put(`/admin/users/${id}/role`, { role }),
+  deleteUser: (id) => api.delete(`/admin/users/${id}`),
+  bulkUploadStudents: (formData) => api.post('/admin/bulk-upload/students', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  bulkUploadTeachers: (formData) => api.post('/admin/bulk-upload/teachers', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  bulkUploadSubjects: (formData) => api.post('/admin/bulk-upload/subjects', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+};
+
 // Health check
 export const healthAPI = {
   check: () => api.get('/health'),
+};
+
+// Complaints API
+export const complaintsAPI = {
+  getComplaints: (params) => api.get('/complaints', { params }),
+  createComplaint: (complaintData) => api.post('/complaints', complaintData),
+  resolveComplaint: (id, data) => api.put(`/complaints/${id}/resolve`, data)
 };
 
 export default api;

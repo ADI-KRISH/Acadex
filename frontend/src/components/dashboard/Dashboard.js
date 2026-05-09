@@ -30,6 +30,8 @@ const Dashboard = () => {
   const [filterCategory, setFilterCategory] = useState('all');
   const [showNotifications, setShowNotifications] = useState(false);
 
+  const isAdmin = user?.role === 'admin';
+
   useEffect(() => {
     fetchDashboardData();
   }, []);
@@ -38,12 +40,20 @@ const Dashboard = () => {
     try {
       setLoading(true);
       
-      // Fetch posts
-      const postsResponse = await postsAPI.getPosts({
+      const params = {
         limit: 10,
         sortBy: 'createdAt',
         sortOrder: 'desc'
-      });
+      };
+
+      // For students/CRs, show their class posts by default
+      if (user?.role === 'student' || user?.role === 'cr') {
+        if (user.academic?.class) params.class = user.academic.class;
+        if (user.academic?.stream) params.stream = user.academic.stream;
+      }
+
+      // Fetch posts
+      const postsResponse = await postsAPI.getPosts(params);
       
       // Fetch notifications
       const notificationsResponse = await notificationsAPI.getNotifications({
@@ -80,7 +90,10 @@ const Dashboard = () => {
     setFilterCategory(category);
     try {
       const params = { limit: 10 };
-      if (category !== 'all') {
+      
+      if (category === 'my') {
+        params.author = user._id;
+      } else if (category !== 'all') {
         params.category = category;
       }
       
@@ -113,8 +126,6 @@ const Dashboard = () => {
         return <AlertCircle className="h-4 w-4 text-warning-600" />;
       case 'announcement':
         return <Bell className="h-4 w-4 text-primary-600" />;
-      case 'discussion':
-        return <MessageSquare className="h-4 w-4 text-secondary-600" />;
       case 'assignment':
         return <CheckCircle className="h-4 w-4 text-success-600" />;
       case 'exam':
@@ -146,117 +157,33 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <BookOpen className="h-8 w-8 text-primary-600" />
-              </div>
-              <h1 className="ml-3 text-2xl font-bold text-gray-900">Kerala Connect</h1>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              {/* Search */}
-              <form onSubmit={handleSearch} className="relative">
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search posts..."
-                  className="input pl-10 pr-4 py-2 w-64"
-                />
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-gray-400" />
-                </div>
-              </form>
-
-              {/* Notifications */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowNotifications(!showNotifications)}
-                  className="relative p-2 text-gray-600 hover:text-gray-900"
-                >
-                  <Bell className="h-6 w-6" />
-                  {unreadCount > 0 && (
-                    <span className="absolute top-0 right-0 h-4 w-4 bg-error-500 text-white text-xs rounded-full flex items-center justify-center">
-                      {unreadCount}
-                    </span>
-                  )}
-                </button>
-
-                {showNotifications && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                    <div className="p-4 border-b border-gray-200">
-                      <h3 className="text-sm font-medium text-gray-900">Notifications</h3>
-                    </div>
-                    <div className="max-h-96 overflow-y-auto">
-                      {notifications.length === 0 ? (
-                        <div className="p-4 text-center text-gray-500">
-                          No notifications
-                        </div>
-                      ) : (
-                        notifications.map((notification) => (
-                          <div
-                            key={notification._id}
-                            className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
-                              !notification.isRead ? 'bg-primary-50' : ''
-                            }`}
-                            onClick={() => markNotificationAsRead(notification._id)}
-                          >
-                            <p className="text-sm font-medium text-gray-900">
-                              {notification.title}
-                            </p>
-                            <p className="text-sm text-gray-600 mt-1">
-                              {notification.message}
-                            </p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {formatDate(notification.createdAt)}
-                            </p>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* User Menu */}
-              <div className="flex items-center space-x-3">
-                <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900">
-                    {user?.profile?.firstName} {user?.profile?.lastName}
-                  </p>
-                  <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
-                </div>
-                <div className="h-8 w-8 bg-primary-600 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-medium">
-                    {user?.profile?.firstName?.[0]}
-                  </span>
-                </div>
-                <button
-                  onClick={logout}
-                  className="p-2 text-gray-600 hover:text-gray-900"
-                >
-                  <LogOut className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900">
-            Welcome back, {user?.profile?.firstName}! 👋
-          </h2>
-          <p className="mt-2 text-gray-600">
-            Stay updated with the latest discussions in {user?.academic?.class}
-          </p>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-3xl font-bold text-gray-900">
+                Welcome back, {user?.profile?.firstName}! 👋
+              </h2>
+              <p className="mt-2 text-gray-600">
+                Stay updated with the latest posts in {user?.academic?.class}
+              </p>
+            </div>
+            <form onSubmit={handleSearch} className="mt-4 md:mt-0 relative">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search posts..."
+                className="input pl-10 pr-4 py-2 w-full md:w-64"
+              />
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-gray-400" />
+              </div>
+            </form>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -267,7 +194,7 @@ const Dashboard = () => {
                 <MessageSquare className="h-6 w-6 text-primary-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Posts</p>
+                <p className="text-sm font-medium text-gray-600">My Posts</p>
                 <p className="text-2xl font-bold text-gray-900">
                   {user?.stats?.questionsAsked || 0}
                 </p>
@@ -284,20 +211,6 @@ const Dashboard = () => {
                 <p className="text-sm font-medium text-gray-600">Answers Given</p>
                 <p className="text-2xl font-bold text-gray-900">
                   {user?.stats?.answersGiven || 0}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-            <div className="flex items-center">
-              <div className="p-2 bg-warning-100 rounded-lg">
-                <TrendingUp className="h-6 w-6 text-warning-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Helpful Votes</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {user?.stats?.helpfulVotes || 0}
                 </p>
               </div>
             </div>
@@ -344,19 +257,21 @@ const Dashboard = () => {
               Announcements
             </button>
             <button
-              onClick={() => handleFilter('discussion')}
+              onClick={() => handleFilter('my')}
               className={`btn-sm ${
-                filterCategory === 'discussion' ? 'btn-primary' : 'btn-secondary'
+                filterCategory === 'my' ? 'btn-primary' : 'btn-secondary'
               }`}
             >
-              Discussions
+              My Posts
             </button>
           </div>
 
-          <Link to="/posts/create" className="btn-primary btn-md">
-            <Plus className="h-4 w-4 mr-2" />
-            New Post
-          </Link>
+          {!isAdmin && (
+            <Link to="/posts/create" className="btn-primary btn-md">
+              <Plus className="h-4 w-4 mr-2" />
+              New Post
+            </Link>
+          )}
         </div>
 
         {/* Posts List */}
@@ -366,11 +281,13 @@ const Dashboard = () => {
               <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No posts yet</h3>
               <p className="text-gray-600 mb-4">
-                Be the first to start a discussion in your class!
+                Be the first to post a question in your class!
               </p>
-              <Link to="/posts/create" className="btn-primary btn-md">
-                Create First Post
-              </Link>
+              {!isAdmin && (
+                <Link to="/posts/create" className="btn-primary btn-md">
+                  Create First Post
+                </Link>
+              )}
             </div>
           ) : (
             posts.map((post) => (

@@ -8,10 +8,11 @@ import { ArrowLeft, Save, X, Plus } from 'lucide-react';
 
 const CreatePost = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState('');
+  const [files, setFiles] = useState([]);
   
   const {
     register,
@@ -24,18 +25,20 @@ const CreatePost = () => {
   const categories = [
     { value: 'question', label: 'Question' },
     { value: 'announcement', label: 'Announcement' },
-    { value: 'discussion', label: 'Discussion' },
     { value: 'assignment', label: 'Assignment' },
     { value: 'exam', label: 'Exam' },
   ];
 
   const streams = [
-    'Computer Science',
+    'CSE Engineering',
+    'ECE Engineering',
+    'ME Engineering',
+    'CE Engineering',
+    'EEE Engineering',
+    'RAI Engineering',
+    'AIE Engineering',
+    'CYS Engineering',
     'Information Technology',
-    'Electronics & Communication',
-    'Mechanical Engineering',
-    'Civil Engineering',
-    'Electrical Engineering',
   ];
 
   const addTag = (e) => {
@@ -54,16 +57,22 @@ const CreatePost = () => {
     try {
       setIsLoading(true);
       
-      const postData = {
-        title: data.title,
-        content: data.content,
-        class: data.class,
-        stream: data.stream,
-        category: data.category,
-        tags: tags,
-      };
+      const formData = new FormData();
+      formData.append('title', data.title);
+      formData.append('content', data.content);
+      formData.append('class', data.class);
+      formData.append('stream', data.stream);
+      formData.append('category', data.category);
+      formData.append('tags', JSON.stringify(tags));
+      
+      files.forEach((file) => {
+        formData.append('attachments', file);
+      });
 
-      const response = await postsAPI.createPost(postData);
+      const response = await postsAPI.createPost(formData);
+      
+      // Refresh user stats
+      await refreshUser();
       
       toast.success('Post created successfully!');
       navigate(`/posts/${response.data.post._id}`);
@@ -76,27 +85,10 @@ const CreatePost = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="flex items-center text-gray-600 hover:text-gray-900"
-              >
-                <ArrowLeft className="h-5 w-5 mr-2" />
-                Back to Dashboard
-              </button>
-            </div>
-            <h1 className="text-xl font-semibold text-gray-900">Create New Post</h1>
-            <div className="w-20"></div>
-          </div>
-        </div>
-      </header>
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">Create New Post</h1>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
             {/* Title */}
@@ -278,9 +270,28 @@ const CreatePost = () => {
               <p className="mt-1 text-sm text-gray-500">
                 Add relevant tags to help others find your post
               </p>
-            </div>
+                {/* File Uploads */}
+                <div className="mt-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Attach Files (PDFs, Docs, Images)
+                  </label>
+                  <input
+                    type="file"
+                    multiple
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                    onChange={(e) => setFiles(Array.from(e.target.files))}
+                    accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                  />
+                  {files.length > 0 && (
+                    <div className="mt-2 text-sm text-gray-600">
+                      {files.length} file(s) selected
+                    </div>
+                  )}
+                </div>
 
-            {/* Action Buttons */}
+              </div>
+
+              {/* Submit Buttons */}
             <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
               <button
                 type="button"

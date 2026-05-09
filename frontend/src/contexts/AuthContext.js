@@ -8,6 +8,7 @@ const initialState = {
   isAuthenticated: false,
   isLoading: true,
   error: null,
+  unreadCount: 0,
 };
 
 // Action types
@@ -23,6 +24,7 @@ const AUTH_ACTIONS = {
   LOAD_USER_SUCCESS: 'LOAD_USER_SUCCESS',
   LOAD_USER_FAILURE: 'LOAD_USER_FAILURE',
   CLEAR_ERROR: 'CLEAR_ERROR',
+  SET_UNREAD_COUNT: 'SET_UNREAD_COUNT',
 };
 
 // Reducer
@@ -44,7 +46,7 @@ const authReducer = (state, action) => {
         ...state,
         user: action.payload.user,
         token: action.payload.token,
-        isAuthenticated: true,
+        isAuthenticated: !!action.payload.user,
         isLoading: false,
         error: null,
       };
@@ -76,6 +78,12 @@ const authReducer = (state, action) => {
         ...state,
         error: null,
       };
+      
+    case AUTH_ACTIONS.SET_UNREAD_COUNT:
+      return {
+        ...state,
+        unreadCount: action.payload,
+      };
 
     default:
       return state;
@@ -88,6 +96,18 @@ const AuthContext = createContext();
 // Provider component
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
+  
+  // Fetch unread notifications count
+  const fetchUnreadCount = async () => {
+    if (!state.isAuthenticated) return;
+    try {
+      const { notificationsAPI } = await import('../services/api');
+      const response = await notificationsAPI.getUnreadCount();
+      dispatch({ type: AUTH_ACTIONS.SET_UNREAD_COUNT, payload: response.data.unreadCount });
+    } catch (error) {
+      console.error('Failed to fetch unread count:', error);
+    }
+  };
 
   // Load user from token on app start
   useEffect(() => {
@@ -120,6 +140,18 @@ export const AuthProvider = ({ children }) => {
     loadUser();
   }, []);
 
+  // Poll for unread notifications
+  useEffect(() => {
+    let interval;
+    if (state.isAuthenticated) {
+      fetchUnreadCount();
+      interval = setInterval(fetchUnreadCount, 30000); // Every 30 seconds
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [state.isAuthenticated]);
+
   // Login
   const login = async (credentials) => {
     try {
@@ -135,7 +167,7 @@ export const AuthProvider = ({ children }) => {
         payload: { user, token },
       });
       
-      return { success: true };
+      return { success: true, user };
     } catch (error) {
       dispatch({
         type: AUTH_ACTIONS.LOGIN_FAILURE,
@@ -170,6 +202,24 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Refresh user data
+  const refreshUser = async () => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const response = await authAPI.getMe();
+        const user = response.data.user;
+        localStorage.setItem('user', JSON.stringify(user));
+        dispatch({
+          type: AUTH_ACTIONS.LOAD_USER_SUCCESS,
+          payload: { user, token },
+        });
+      } catch (error) {
+        console.error('Refresh user error:', error);
+      }
+    }
+  };
+
   // Logout
   const logout = async () => {
     try {
@@ -193,6 +243,8 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    refreshUser,
+    fetchUnreadCount,
     clearError,
   };
 

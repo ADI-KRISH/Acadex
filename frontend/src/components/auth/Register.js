@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { classGroupsAPI } from '../../services/api';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -31,11 +32,8 @@ const Register = () => {
         firstName: data.firstName,
         lastName: data.lastName,
       },
-      academic: {
-        class: data.class,
-        stream: data.stream,
-        semester: parseInt(data.semester) || 1,
-      },
+      classGroupId: data.classGroupId,
+      role: data.role,
     };
 
     const result = await registerUser(userData);
@@ -48,14 +46,21 @@ const Register = () => {
     }
   };
 
-  const streams = [
-    'Computer Science',
-    'Information Technology',
-    'Electronics & Communication',
-    'Mechanical Engineering',
-    'Civil Engineering',
-    'Electrical Engineering',
-  ];
+  const [availableClasses, setAvailableClasses] = useState([]);
+
+  useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        const res = await classGroupsAPI.getPublicClassGroups();
+        if (res.success) {
+          setAvailableClasses(res.data.classGroups);
+        }
+      } catch (err) {
+        console.error('Failed to fetch class groups', err);
+      }
+    };
+    fetchClasses();
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -185,68 +190,58 @@ const Register = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Class */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Role */}
               <div>
-                <label htmlFor="class" className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Role
+                </label>
+                <div className="flex items-center space-x-4">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      value="student"
+                      {...register('role', { required: 'Role is required' })}
+                      className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"
+                      defaultChecked
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Student</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      value="faculty"
+                      {...register('role', { required: 'Role is required' })}
+                      className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Teacher</span>
+                  </label>
+                </div>
+                {errors.role && (
+                  <p className="mt-1 text-sm text-error-600">{errors.role.message}</p>
+                )}
+              </div>
+
+              {/* Class Group */}
+              <div>
+                <label htmlFor="classGroupId" className="block text-sm font-medium text-gray-700">
                   Class
                 </label>
-                <input
-                  {...register('class', {
+                <select
+                  {...register('classGroupId', {
                     required: 'Class is required',
                   })}
-                  type="text"
-                  className="input"
-                  placeholder="e.g., CS-A"
-                />
-                {errors.class && (
-                  <p className="mt-1 text-sm text-error-600">{errors.class.message}</p>
-                )}
-              </div>
-
-              {/* Stream */}
-              <div>
-                <label htmlFor="stream" className="block text-sm font-medium text-gray-700">
-                  Stream
-                </label>
-                <select
-                  {...register('stream', {
-                    required: 'Stream is required',
-                  })}
-                  className="input"
+                  className="input mt-1"
                 >
-                  <option value="">Select stream</option>
-                  {streams.map((stream) => (
-                    <option key={stream} value={stream}>
-                      {stream}
+                  <option value="">Select your class</option>
+                  {availableClasses.map((cg) => (
+                    <option key={cg._id} value={cg._id}>
+                      {cg.name} ({cg.stream}) - Sem {cg.semester}
                     </option>
                   ))}
                 </select>
-                {errors.stream && (
-                  <p className="mt-1 text-sm text-error-600">{errors.stream.message}</p>
-                )}
-              </div>
-
-              {/* Semester */}
-              <div>
-                <label htmlFor="semester" className="block text-sm font-medium text-gray-700">
-                  Semester
-                </label>
-                <select
-                  {...register('semester', {
-                    required: 'Semester is required',
-                  })}
-                  className="input"
-                >
-                  <option value="">Select semester</option>
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
-                    <option key={sem} value={sem}>
-                      Semester {sem}
-                    </option>
-                  ))}
-                </select>
-                {errors.semester && (
-                  <p className="mt-1 text-sm text-error-600">{errors.semester.message}</p>
+                {errors.classGroupId && (
+                  <p className="mt-1 text-sm text-error-600">{errors.classGroupId.message}</p>
                 )}
               </div>
             </div>

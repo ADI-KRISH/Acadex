@@ -6,13 +6,24 @@ import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import Dashboard from './components/dashboard/Dashboard';
 import CreatePost from './components/posts/CreatePost';
+import PostDetail from './components/posts/PostDetail';
+import Profile from './components/profile/Profile';
+import Notifications from './components/notifications/Notifications';
+import Reminders from './components/reminders/Reminders';
+import AdminPanel from './components/admin/AdminPanel';
+import ChatRooms from './components/chat/ChatRooms';
+import ChatRoomDetail from './components/chat/ChatRoomDetail';
+import Complaints from './components/complaints/Complaints';
+import Navbar from './components/common/Navbar';
+import AdminLayout from './components/common/AdminLayout';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import './index.css';
 
-// Layout component for protected routes
+// Layout component for protected routes with shared Navbar
 const Layout = ({ children }) => {
   return (
     <div className="min-h-screen bg-gray-50">
+      <Navbar />
       {children}
     </div>
   );
@@ -20,7 +31,7 @@ const Layout = ({ children }) => {
 
 // App content with auth context
 const AppContent = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
 
   if (isLoading) {
     return (
@@ -71,12 +82,92 @@ const AppContent = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/posts/:id"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <PostDetail />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Profile />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Notifications />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/chat"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ChatRooms />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/chat/:id"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ChatRoomDetail />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reminders"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Reminders />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/complaints"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Complaints />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminPanel />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
 
         {/* Redirect root to dashboard or login */}
         <Route
           path="/"
           element={
-            <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
+            <Navigate to={isAuthenticated ? (user?.role === 'admin' ? '/admin' : '/dashboard') : "/login"} replace />
           }
         />
 
@@ -84,7 +175,7 @@ const AppContent = () => {
         <Route
           path="*"
           element={
-            <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
+            <Navigate to={isAuthenticated ? (user?.role === 'admin' ? '/admin' : '/dashboard') : "/login"} replace />
           }
         />
       </Routes>

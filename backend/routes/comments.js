@@ -277,11 +277,20 @@ router.delete('/:id', verifyToken, async (req, res) => {
       });
     }
 
-    // Check if user is comment owner
-    if (comment.author.toString() !== req.user._id.toString()) {
+    // Check permissions
+    const user = req.user;
+    const isOwner = comment.author.toString() === user._id.toString();
+    const isCR = user.role === 'cr';
+    const isFaculty = user.role === 'faculty';
+    const isAdmin = user.role === 'admin';
+
+    // Log for debugging
+    console.log(`Comment delete permission check: user=${user._id}, role=${user.role}, isOwner=${isOwner}`);
+
+    if (!isOwner && !isCR && !isFaculty && !isAdmin) {
       return res.status(403).json({
         success: false,
-        message: 'Access denied. You can only delete your own comments.'
+        message: 'Access denied. You do not have permission to delete this comment.'
       });
     }
 
@@ -352,8 +361,7 @@ router.post('/:id/vote', verifyToken, async (req, res) => {
       success: true,
       message: 'Vote recorded successfully',
       data: {
-        upvotes: comment.votes.upvotes.length,
-        downvotes: comment.votes.downvotes.length,
+        votes: comment.votes,
         voteScore: comment.voteScore
       }
     });
@@ -366,54 +374,6 @@ router.post('/:id/vote', verifyToken, async (req, res) => {
   }
 });
 
-// @route   POST /api/comments/:id/helpful
-// @desc    Mark comment as helpful
-// @access  Private
-router.post('/:id/helpful', verifyToken, async (req, res) => {
-  try {
-    const comment = await Comment.findById(req.params.id);
-    
-    if (!comment || comment.status === 'deleted') {
-      return res.status(404).json({
-        success: false,
-        message: 'Comment not found'
-      });
-    }
 
-    await comment.addHelpfulVote(req.user._id);
-
-    // Update comment author stats
-    await User.findByIdAndUpdate(comment.author, {
-      $inc: { 'stats.helpfulVotes': 1 }
-    });
-
-    // Create notification for comment author (if not self-voting)
-    if (comment.author.toString() !== req.user._id.toString()) {
-      await Notification.createNotification({
-        recipient: comment.author,
-        sender: req.user._id,
-        type: 'vote',
-        title: 'Your answer was marked as helpful!',
-        message: `${req.user.profile.firstName} ${req.user.profile.lastName} marked your answer as helpful`,
-        relatedPost: comment.post,
-        relatedComment: comment._id
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'Comment marked as helpful',
-      data: {
-        helpfulVotes: comment.helpfulVotes
-      }
-    });
-  } catch (error) {
-    console.error('Mark helpful error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error'
-    });
-  }
-});
 
 module.exports = router;

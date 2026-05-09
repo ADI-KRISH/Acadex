@@ -70,10 +70,6 @@ const userSchema = new mongoose.Schema({
     answersGiven: {
       type: Number,
       default: 0
-    },
-    helpfulVotes: {
-      type: Number,
-      default: 0
     }
   },
   isActive: {

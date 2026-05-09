@@ -53,20 +53,16 @@ const validateUserRegistration = [
     .isLength({ max: 50 })
     .withMessage('Last name cannot exceed 50 characters'),
   
-  body('academic.class')
-    .trim()
+  body('classGroupId')
     .notEmpty()
-    .withMessage('Class is required'),
-  
-  body('academic.stream')
-    .trim()
-    .notEmpty()
-    .withMessage('Stream is required'),
-  
-  body('academic.semester')
+    .withMessage('Class group selection is required')
+    .isMongoId()
+    .withMessage('Invalid class group ID'),
+
+  body('role')
     .optional()
-    .isInt({ min: 1, max: 10 })
-    .withMessage('Semester must be between 1 and 10'),
+    .isIn(['student', 'faculty'])
+    .withMessage('Role must be either student or faculty'),
   
   handleValidationErrors
 ];
