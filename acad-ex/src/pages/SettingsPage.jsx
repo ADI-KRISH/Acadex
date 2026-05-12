@@ -111,7 +111,7 @@ export default function SettingsPage() {
           <div>
             <div className="settings-title">Preview</div>
             <div className="preview-text" style={{ fontSize: settings.fontSize, fontFamily: settings.font }}>
-              This is how your text will look across AcadEx. Adjust the settings above to personalise your experience.
+              This is how your text will look across Kerala Connect. Adjust the settings above to personalise your experience.
             </div>
           </div>
         </div>

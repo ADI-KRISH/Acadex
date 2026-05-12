@@ -8,6 +8,8 @@ import RemindersPage from './pages/RemindersPage';
 import SettingsPage from './pages/SettingsPage';
 import ProfilePage from './pages/ProfilePage';
 import NotificationsPage from './pages/NotificationsPage';
+import AdminPage from './pages/AdminPage';
+import ClassManagementPage from './pages/ClassManagementPage';
 import Layout from './components/Layout';
 
 function PrivateRoute({ children }) {
@@ -36,6 +38,8 @@ export default function App() {
                 <Route path="/settings"     element={<SettingsPage />} />
                 <Route path="/profile"      element={<ProfilePage />} />
                 <Route path="/notifications" element={<NotificationsPage />} />
+                <Route path="/admin"         element={<AdminPage />} />
+                <Route path="/manage-class"  element={<ClassManagementPage />} />
                 <Route path="*"             element={<Navigate to="/" />} />
               </Routes>
             </Layout>

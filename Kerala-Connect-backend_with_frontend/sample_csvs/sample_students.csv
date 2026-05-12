@@ -1,0 +1,4 @@
+first_name,last_name,email,class_name,stream,password
+Alice,Smith,alice.smith@example.com,CSE A,B.Tech,Password123!
+Bob,Jones,bob.jones@example.com,CSE B,B.Tech,Password123!
+Charlie,Brown,charlie.brown@example.com,ECE A,B.Tech,Password123!

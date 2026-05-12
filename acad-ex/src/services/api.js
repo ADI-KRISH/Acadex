@@ -1,216 +1,169 @@
 import axios from 'axios';
-import {
-  MOCK_QUESTIONS, MOCK_ANSWERS, MOCK_REMINDERS,
-  MOCK_MESSAGES, MOCK_NOTIFICATIONS, MOCK_USER,
-} from './mockData';
+import { io } from 'socket.io-client';
 
-const BASE = import.meta.env.VITE_API_URL;
-const USE_MOCK = !BASE;
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const SOCKET_URL = BASE_URL.replace('/api', '');
 
-const http = axios.create({ baseURL: BASE });
-
-// Attach JWT to every request
-http.interceptors.request.use(cfg => {
-  const token = localStorage.getItem('acad_token');
-  if (token) cfg.headers.Authorization = `Bearer ${token}`;
-  return cfg;
+// ── Axios instance ────────────────────────────────────────────────────────────
+const api = axios.create({
+  baseURL: BASE_URL,
+  headers: { 'Content-Type': 'application/json' },
 });
 
+// Attach JWT to every request
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+// Auto-logout on 401
+api.interceptors.response.use(
+  (res) => res.data,
+  (error) => {
+    // Only redirect to login if it's a 401 and NOT from the login endpoint itself
+    if (error.response?.status === 401 && !error.config.url.includes('/auth/login')) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error.response?.data || error.message);
+  }
+);
+
+// ── Socket.io ─────────────────────────────────────────────────────────────────
+export const socket = io(SOCKET_URL, { autoConnect: false });
+
 // ── Auth ──────────────────────────────────────────────────────────────────────
-export const apiLogin = async (email, password) => {
-  if (USE_MOCK) {
-    await delay(400);
-    return { user: { ...MOCK_USER, email }, token: 'mock-jwt-' + Date.now() };
-  }
-  const { data } = await http.post('/auth/login', { email, password });
-  return data;
-};
+export const apiLogin = (email, password) =>
+  api.post('/auth/login', { email, password });
 
-export const apiRegister = async (payload) => {
-  if (USE_MOCK) {
-    await delay(400);
-    return { user: { ...MOCK_USER, ...payload }, token: 'mock-jwt-' + Date.now() };
-  }
-  const { data } = await http.post('/auth/register', payload);
-  return data;
-};
+export const apiRegister = (payload) =>
+  api.post('/auth/register', payload);
 
-export const apiGetMe = async () => {
-  if (USE_MOCK) return MOCK_USER;
-  const { data } = await http.get('/users/me');
-  return data;
-};
+export const apiGetMe = () =>
+  api.get('/auth/me');
 
-// ── Questions ─────────────────────────────────────────────────────────────────
-export const apiGetQuestions = async (filters = {}) => {
-  if (USE_MOCK) {
-    await delay(200);
-    let list = [...MOCK_QUESTIONS];
-    if (filters.classId && filters.classId !== 'all')
-      list = list.filter(q => q.classId === filters.classId);
-    if (filters.tag && filters.tag !== 'all')
-      list = list.filter(q => q.tags.includes(filters.tag));
-    if (filters.tab === 'unanswered') list = list.filter(q => q.answers === 0);
-    if (filters.tab === 'mine') list = list.filter(q => q.mine);
-    if (filters.search)
-      list = list.filter(q =>
-        q.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-        q.tags.some(t => t.includes(filters.search.toLowerCase()))
-      );
-    return list;
-  }
-  const { data } = await http.get('/questions', { params: filters });
-  return data;
-};
+export const apiLogout = () =>
+  api.post('/auth/logout');
 
-export const apiGetThread = async (id) => {
-  if (USE_MOCK) {
-    await delay(200);
-    const question = MOCK_QUESTIONS.find(q => q.id === id);
-    const answers  = MOCK_ANSWERS[id] || [];
-    return { question, answers };
-  }
-  const { data } = await http.get(`/questions/${id}`);
-  return data;
-};
+// ── Class Groups ──────────────────────────────────────────────────────────────
+export const apiGetPublicClassGroups = () =>
+  api.get('/classgroups/public');
 
-export const apiPostQuestion = async (payload) => {
-  if (USE_MOCK) {
-    await delay(300);
-    const newQ = {
-      id: String(Date.now()), ...payload,
-      author: MOCK_USER, answers: 0, votes: 0,
-      solved: false, pinned: false, mine: true,
-      createdAt: new Date().toISOString(),
-    };
-    MOCK_QUESTIONS.unshift(newQ);
-    return newQ;
-  }
-  const { data } = await http.post('/questions', payload);
-  return data;
-};
+// ── Posts (Questions) ─────────────────────────────────────────────────────────
+export const apiGetQuestions = (params = {}) =>
+  api.get('/posts', { params });
 
-export const apiVoteQuestion = async (id, dir) => {
-  if (USE_MOCK) {
-    const q = MOCK_QUESTIONS.find(x => x.id === id);
-    if (q) q.votes += dir;
-    return { votes: q?.votes };
-  }
-  const { data } = await http.post(`/questions/${id}/vote`, { dir });
-  return data;
-};
+export const apiGetThread = (id) =>
+  Promise.all([
+    api.get(`/posts/${id}`),
+    api.get(`/comments/post/${id}`),
+  ]).then(([postRes, commentsRes]) => ({
+    question: postRes.data.post,
+    answers: commentsRes.data.comments || [],
+  }));
 
-export const apiPinQuestion = async (id) => {
-  if (USE_MOCK) {
-    const q = MOCK_QUESTIONS.find(x => x.id === id);
-    if (q) q.pinned = !q.pinned;
-    return q;
-  }
-  const { data } = await http.patch(`/questions/${id}/pin`);
-  return data;
-};
+export const apiPostQuestion = (payload) =>
+  api.post('/posts', payload);
 
-// ── Answers ───────────────────────────────────────────────────────────────────
-export const apiPostAnswer = async (questionId, body) => {
-  if (USE_MOCK) {
-    await delay(300);
-    const newA = {
-      id: 'a' + Date.now(), questionId, body,
-      author: MOCK_USER, votes: 0, accepted: false,
-      createdAt: new Date().toISOString(),
-    };
-    if (!MOCK_ANSWERS[questionId]) MOCK_ANSWERS[questionId] = [];
-    MOCK_ANSWERS[questionId].push(newA);
-    const q = MOCK_QUESTIONS.find(x => x.id === questionId);
-    if (q) q.answers++;
-    return newA;
-  }
-  const { data } = await http.post(`/questions/${questionId}/answers`, { body });
-  return data;
-};
+export const apiVoteQuestion = (id, dir) =>
+  api.post(`/posts/${id}/vote`, { voteType: dir > 0 ? 'upvote' : 'downvote' });
 
-export const apiVoteAnswer = async (id, dir) => {
-  if (USE_MOCK) return { votes: 0 };
-  const { data } = await http.post(`/answers/${id}/vote`, { dir });
-  return data;
-};
+export const apiPinPost = (id) =>
+  api.post(`/posts/${id}/pin`);
 
-export const apiAcceptAnswer = async (answerId, questionId) => {
-  if (USE_MOCK) {
-    const answers = MOCK_ANSWERS[questionId] || [];
-    answers.forEach(a => { a.accepted = a.id === answerId; });
-    const q = MOCK_QUESTIONS.find(x => x.id === questionId);
-    if (q) q.solved = true;
-    return {};
-  }
-  const { data } = await http.patch(`/answers/${answerId}/accept`);
-  return data;
-};
+export const apiDeletePost = (id) =>
+  api.delete(`/posts/${id}`);
+
+export const apiSearchPosts = (q) =>
+  api.get('/posts/search', { params: { q } });
+
+// ── Comments (Answers) ────────────────────────────────────────────────────────
+export const apiPostAnswer = (questionId, content) =>
+  api.post('/comments', { content, post: questionId });
+
+export const apiVoteAnswer = (id, dir) =>
+  api.post(`/comments/${id}/vote`, { voteType: dir > 0 ? 'upvote' : 'downvote' });
+
+export const apiAcceptAnswer = (commentId, questionId) =>
+  api.post(`/posts/${questionId}/best-answer`, { commentId });
+
+export const apiDeleteComment = (id) =>
+  api.delete(`/comments/${id}`);
 
 // ── Reminders ─────────────────────────────────────────────────────────────────
-export const apiGetReminders = async () => {
-  if (USE_MOCK) { await delay(200); return [...MOCK_REMINDERS]; }
-  const { data } = await http.get('/reminders');
-  return data;
-};
+export const apiGetReminders = (params = {}) =>
+  api.get('/reminders', { params });
 
-export const apiPostReminder = async (payload) => {
-  if (USE_MOCK) {
-    await delay(300);
-    const newR = { id: 'r' + Date.now(), ...payload };
-    MOCK_REMINDERS.unshift(newR);
-    return newR;
-  }
-  const { data } = await http.post('/reminders', payload);
-  return data;
-};
+export const apiPostReminder = (payload) =>
+  api.post('/reminders', payload);
 
-export const apiDeleteReminder = async (id) => {
-  if (USE_MOCK) {
-    const idx = MOCK_REMINDERS.findIndex(r => r.id === id);
-    if (idx !== -1) MOCK_REMINDERS.splice(idx, 1);
-    return {};
-  }
-  await http.delete(`/reminders/${id}`);
-};
+export const apiDeleteReminder = (id) =>
+  api.delete(`/reminders/${id}`);
 
 // ── Chat ──────────────────────────────────────────────────────────────────────
-export const apiGetMessages = async (classId) => {
-  if (USE_MOCK) { await delay(150); return MOCK_MESSAGES[classId] || []; }
-  const { data } = await http.get(`/chats/${classId}/messages`);
-  return data;
-};
+export const apiGetChatRooms = () =>
+  api.get('/chat/rooms');
 
-export const apiSendMessage = async (classId, text) => {
-  if (USE_MOCK) {
-    const msg = {
-      id: 'm' + Date.now(), name: MOCK_USER.name,
-      initials: MOCK_USER.initials, text,
-      time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-      mine: true, color: '#3ccf91',
-    };
-    if (!MOCK_MESSAGES[classId]) MOCK_MESSAGES[classId] = [];
-    MOCK_MESSAGES[classId].push(msg);
-    return msg;
-  }
-  const { data } = await http.post(`/chats/${classId}/messages`, { text });
-  return data;
-};
+export const apiGetMessages = (roomId) =>
+  api.get(`/chat/rooms/${roomId}/messages`);
+
+export const apiCreateChatRoom = (name, classGroupId) =>
+  api.post('/chat/rooms', { name, classGroupId });
 
 // ── Notifications ─────────────────────────────────────────────────────────────
-export const apiGetNotifications = async () => {
-  if (USE_MOCK) { await delay(150); return [...MOCK_NOTIFICATIONS]; }
-  const { data } = await http.get('/notifications');
-  return data;
-};
+export const apiGetNotifications = (params = {}) =>
+  api.get('/notifications', { params });
 
-export const apiMarkAllRead = async () => {
-  if (USE_MOCK) {
-    MOCK_NOTIFICATIONS.forEach(n => { n.read = true; });
-    return {};
-  }
-  await http.post('/notifications/read-all');
-};
+export const apiGetUnreadCount = () =>
+  api.get('/notifications/unread-count');
 
-// ── Utility ───────────────────────────────────────────────────────────────────
-const delay = (ms) => new Promise(r => setTimeout(r, ms));
+export const apiMarkNotifRead = (id) =>
+  api.put(`/notifications/${id}/read`);
+
+export const apiMarkAllRead = () =>
+  api.put('/notifications/mark-all-read');
+
+export const apiDeleteNotification = (id) =>
+  api.delete(`/notifications/${id}`);
+
+// ── Admin ─────────────────────────────────────────────────────────────────────
+export const apiGetAdminHealth = () =>
+  api.get('/admin/health');
+
+export const apiGetAdminUsers = () =>
+  api.get('/admin/users');
+
+export const apiUpdateUserRole = (id, role) =>
+  api.put(`/admin/users/${id}/role`, { role });
+
+export const apiDeleteUser = (id) =>
+  api.delete(`/admin/users/${id}`);
+
+export const apiGetAdminClasses = () =>
+  api.get('/classgroups?isActive=all');
+
+// ── Class Management ──────────────────────────────────────────────────────────
+export const apiGetClassGroup = (id) =>
+  api.get(`/classgroups/${id}`);
+
+export const apiAddClassMember = (classId, userId) =>
+  api.post(`/classgroups/${classId}/members`, { userId });
+
+export const apiRemoveClassMember = (classId, userId) =>
+  api.delete(`/classgroups/${classId}/members/${userId}`);
+
+// ── Users ─────────────────────────────────────────────────────────────────────
+export const apiGetProfile = (id) =>
+  api.get(`/users/${id}`);
+
+export const apiUpdateProfile = (payload) =>
+  api.put('/users/profile', payload);
+
+// ── Support / Complaints ──────────────────────────────────────────────────────
+export const apiPostComplaint = (data) => api.post('/complaints', data);
+export const apiGetComplaints = (params) => api.get('/complaints', { params });
+export const apiResolveComplaint = (id, data) => api.put(`/complaints/${id}/resolve`, data);
+
+export default api;

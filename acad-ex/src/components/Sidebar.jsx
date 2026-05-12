@@ -1,31 +1,74 @@
+import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { CLASS_MAP } from '../services/mockData';
+import { apiGetAdminClasses } from '../services/api';
 import './Sidebar.css';
 
-const NAV = [
-  { path: '/',              icon: '💬', label: 'Forum' },
-  { path: '/chat',          icon: '🗨️', label: 'Group Chat', badge: 3 },
-  { path: '/reminders',     icon: '📌', label: 'Reminders' },
-  { path: '/notifications', icon: '🔔', label: 'Notifications', badge: 2 },
-  { path: '/settings',      icon: '⚙️', label: 'Appearance' },
-];
-
 export default function Sidebar({ activeClass, onClassChange }) {
-  const { user, logout } = useAuth();
+  const { user, logout, unreadCount } = useAuth();
+  const [classes, setClasses] = useState([]);
   const location = useLocation();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      apiGetAdminClasses().then(res => setClasses(res.data?.classGroups || []));
+    }
+  }, [user]);
+
+  const NAV = [
+    { path: '/',              icon: '💬', label: 'Forum' },
+    { path: '/chat',          icon: '🗨️', label: 'Group Chat' },
+    { path: '/reminders',     icon: '📌', label: 'Reminders' },
+    { path: '/notifications', icon: '🔔', label: 'Notifications', badge: unreadCount > 0 ? unreadCount : null },
+    { path: '/settings',      icon: '⚙️', label: 'Appearance' },
+  ];
+
+  if (user?.role === 'admin') {
+    NAV.push({ path: '/admin', icon: '🛡️', label: 'Admin Panel' });
+  }
+
+  if (user?.role === 'cr') {
+    NAV.push({ path: '/manage-class', icon: '👥', label: 'Manage Class' });
+  }
+
   const isActive = (path) =>
     path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
+
+  // Derive the user's class from backend data
+  const userClass = user?.academic?.class || user?.classGroup?.name;
 
   return (
     <aside className="sidebar">
       {/* Logo */}
       <div className="sidebar-logo">
-        <div className="logo-name">AcadEx</div>
+        <div className="logo-name">Kerala Connect</div>
         <div className="logo-sub">Amrita · AIE23</div>
       </div>
+
+      {/* Admin Context Switcher */}
+      {user?.role === 'admin' && (
+        <div className="admin-context" style={{ padding: '0 16px', marginBottom: 24 }}>
+          <div className="nav-label" style={{ marginBottom: 8 }}>Viewing Class</div>
+          <div className="class-list">
+            <button 
+              className={`class-item ${activeClass === 'all' ? 'active' : ''}`}
+              onClick={() => onClassChange('all')}
+            >
+              <span className="dot" /> All Classes
+            </button>
+            {classes.map(c => (
+              <button 
+                key={c._id}
+                className={`class-item ${activeClass === c.name ? 'active' : ''}`}
+                onClick={() => onClassChange(c.name)}
+              >
+                <span className="dot" /> {c.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Nav */}
       <nav className="sidebar-nav">
@@ -42,29 +85,7 @@ export default function Sidebar({ activeClass, onClassChange }) {
           </button>
         ))}
 
-        {/* Classes */}
-        <div className="nav-label" style={{ marginTop: 12 }}>Classes</div>
       </nav>
-
-      <div className="class-list">
-        <div
-          className={`class-tag ${activeClass === 'all' ? 'active' : ''}`}
-          onClick={() => onClassChange?.('all')}
-        >
-          <div className="class-dot" style={{ background: 'var(--accent)' }} />
-          All Classes
-        </div>
-        {Object.entries(CLASS_MAP).map(([key, { label, color }]) => (
-          <div
-            key={key}
-            className={`class-tag ${activeClass === key ? 'active' : ''}`}
-            onClick={() => onClassChange?.(key)}
-          >
-            <div className="class-dot" style={{ background: color }} />
-            {label}
-          </div>
-        ))}
-      </div>
 
       {/* User Card */}
       <div className="sidebar-bottom">
@@ -74,7 +95,10 @@ export default function Sidebar({ activeClass, onClassChange }) {
           </div>
           <div>
             <div className="user-name">{user?.name || 'User'}</div>
-            <div className="user-role">{user?.role === 'cr' ? 'Class Rep' : 'Student'} · {user?.rollNo?.slice(-5) || ''}</div>
+            <div className="user-role">
+              {user?.role === 'admin' ? 'System Admin' : user?.role === 'cr' ? 'Class Rep' : user?.role === 'faculty' ? 'Faculty' : 'Student'} 
+              {user?.rollNo ? ` · ${user.rollNo.slice(-5)}` : ''}
+            </div>
           </div>
         </div>
         <button className="nav-item" onClick={logout} style={{ color: 'var(--red)', marginTop: 4 }}>

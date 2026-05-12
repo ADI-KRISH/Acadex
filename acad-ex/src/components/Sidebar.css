@@ -42,16 +42,18 @@
 .nav-item.active { background: rgba(124,106,247,0.15); color: var(--accent2); font-weight: 500; }
 .nav-icon { width: 18px; text-align: center; font-size: 15px; flex-shrink: 0; }
 
-.class-list { padding: 0 8px 12px; }
-.class-tag {
+.class-list { display: flex; flex-direction: column; gap: 2px; }
+.class-item {
   display: flex; align-items: center; gap: 8px;
-  padding: 7px 12px; border-radius: var(--radius-sm);
+  padding: 6px 12px; border-radius: var(--radius-sm);
   cursor: pointer; font-size: 13px; color: var(--muted);
-  transition: all 0.15s; margin: 1px 0;
+  transition: all 0.15s; border: none; background: none;
+  width: 100%; text-align: left; font-family: var(--font);
 }
-.class-tag:hover { background: var(--bg3); color: var(--text); }
-.class-tag.active { color: var(--text); background: var(--bg3); }
-.class-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.class-item:hover { background: var(--bg3); color: var(--text); }
+.class-item.active { background: rgba(255,255,255,0.05); color: #fff; font-weight: 500; }
+.class-item.active .dot { background: var(--accent); }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: #444; flex-shrink: 0; }
 
 .sidebar-bottom {
   padding: 12px 8px 16px;
