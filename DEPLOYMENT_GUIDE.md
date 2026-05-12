@@ -1,64 +1,63 @@
-# 🚀 Kerala Connect Deployment Guide (Railway Edition)
+# 🚀 Kerala Connect: Full Railway Deployment Guide
 
-This guide will walk you through hosting your application for free using **Railway** (for the backend) and **Vercel** (for the frontend).
+This guide will walk you through hosting **both** your Frontend and Backend on **Railway** within the same project.
 
 ---
 
-## 1. Backend: Hosting on [Railway](https://railway.app/)
+## 1. Project Setup on [Railway](https://railway.app/)
 
-Railway is extremely fast and developer-friendly. It will use the `Procfile` I've added to your backend.
-
-### Steps:
-1.  **Sign Up/Login** to Railway and connect your GitHub account.
+1.  **Sign Up/Login** and connect your GitHub account.
 2.  Click **+ New Project** > **Deploy from GitHub repo**.
 3.  Select your repository: `Kerala-Connect`.
-4.  **Before deploying**, Railway might ask for "Service" settings:
-    *   **Root Directory**: Set this to `Kerala-Connect-backend_with_frontend/backend`.
-5.  **Variables**: Go to the **Variables** tab and add:
+4.  Railway will create your first "Service". Let's configure this as the **Backend**.
+
+---
+
+## 2. Service 1: The Backend
+
+1.  Click on the newly created service and go to **Settings**.
+2.  **Service Name**: Change it to `backend`.
+3.  **Root Directory**: Set this to `Kerala-Connect-backend_with_frontend/backend`.
+4.  **Variables**: Add the following:
     *   `MONGODB_URI`: `mongodb+srv://Admin:CxaRzVxuKJPu0HgC@storage.xg8hzng.mongodb.net/kerala-connect?retryWrites=true&w=majority&appName=Storage`
-    *   `JWT_SECRET`: (Create a random secret string)
-    *   `PORT`: `5000` (Railway will assign one, but 5000 is your default)
+    *   `JWT_SECRET`: (A random string)
+    *   `PORT`: `5000`
     *   `NODE_ENV`: `production`
-6.  **Deploy**: Once variables are set, Railway will automatically redeploy.
-7.  **Generate Domain**: Go to **Settings** > **Public Networking** > **Generate Domain**.
-8.  **Note your URL**: You'll get a URL like `https://backend-production-xxxx.up.railway.app`. **Copy this.**
+5.  **Public Networking**: Go to **Settings** > **Public Networking** > **Generate Domain**.
+6.  **Copy the URL**: (e.g., `https://backend-production.up.railway.app`). You'll need this for the frontend.
 
 ---
 
-## 2. Frontend: Hosting on [Vercel](https://vercel.com/)
+## 3. Service 2: The Frontend
 
-I still recommend Vercel for the frontend because it's permanently free for hobbyists and optimized for Vite.
+Now, let's add the frontend as a *second* service in the same project.
 
-### Steps:
-1.  **Sign Up/Login** to Vercel and connect your GitHub account.
-2.  Click **Add New** > **Project**.
-3.  Select your repository: `Kerala-Connect`.
-4.  **Configure Project**:
-    *   **Framework Preset**: `Vite`
-    *   **Root Directory**: `acad-ex` (Click "Edit" and select the `acad-ex` folder)
-    *   **Build Command**: `npm run build`
-    *   **Output Directory**: `dist`
-5.  **Environment Variables**: Add:
-    *   `VITE_API_URL`: `https://your-railway-url.up.railway.app/api` (Replace with your Railway domain)
-6.  **Deploy**: Click "Deploy".
+1.  In your Railway project dashboard, click **+ New** > **GitHub Repo**.
+2.  Select the same repository: `Kerala-Connect`.
+3.  Click on this second service and go to **Settings**.
+4.  **Service Name**: Change it to `frontend`.
+5.  **Root Directory**: Set this to `acad-ex`.
+6.  **Variables**: Add:
+    *   `VITE_API_URL`: `https://your-backend-url.up.railway.app/api` (Use the URL you copied from Service 1)
+7.  **Public Networking**: Go to **Settings** > **Public Networking** > **Generate Domain**.
+8.  This will give you your final live website URL! (e.g., `https://frontend-production.up.railway.app`).
 
 ---
 
-## 3. Why the Procfile?
-The `Procfile` tells Railway (and other platforms) exactly how to start your app: `web: node server.js`. It's a standard way to define your process types.
+## 4. Final Polish (CORS)
+
+Go back to your **Backend Service** > **Variables** and add one more:
+*   `FRONTEND_URL`: `https://your-frontend-url.up.railway.app` (Use the URL from Service 2)
 
 ---
 
-## 4. Post-Deployment Checklist
-
-### CORS Setup
-In Railway, add a variable:
-*   `FRONTEND_URL`: `https://your-vercel-url.vercel.app` (Your live frontend URL)
-
-### MongoDB Access
-Ensure your MongoDB Atlas "IP Access List" includes `0.0.0.0/0` (Allow Access from Anywhere) so Railway can connect.
+## 💡 Why this works?
+Railway is smart. By setting the **Root Directory**, you tell it which part of your project to build.
+- For the `backend` folder, it finds the `Procfile` and `server.js`.
+- For the `acad-ex` folder, it finds `package.json` and automatically builds your Vite app.
 
 ---
 
-## Need Help?
-Check the **Deployments** tab in Railway for logs if the build fails. Most common issues are missing environment variables!
+## Troubleshooting
+- **Build Failures**: Check the **Deployments** tab logs. Usually, it's a missing environment variable.
+- **API Errors**: Ensure your `VITE_API_URL` ends with `/api` and matches your backend domain exactly.
